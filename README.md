@@ -51,12 +51,12 @@ mosaic [options] input_files... output_directory
 
 **What is the outcome?**
 There are few options:
-: 1. Folder with reprojected and recolored images. Since program will in either case do a reprojecting, it'll have to store reprojected files in some tempoary directory, this temporary directory may be result directory.
+1. Folder with reprojected and recolored images. Since program will in either case do a reprojecting, it'll have to store reprojected files in some tempoary directory, this temporary directory may be result directory.
 2. JSON-File, describing the reference image and band transfomation matrices
 3. Color-transfomated images, but without reprojecting. May be usefull, if we'll do reprojection later.
 
 Also, there should be debug output, such as log. Log should contain:
-: 1. Tree structure of performed tree building
+1. Tree structure of performed tree building
 2. Error reports, if any
 3. Warnings
 
