@@ -4,21 +4,25 @@
 [![Foo](https://i.imgur.com/D5wjsv9.png)](https://drive.google.com/open?id=0BxWRyyRCfA3gS0JEaTFpMWRLcXM)
 
 ## User story
-I (user) would like to have a tool build on top of [GDAL] that would perfrom mosaicing of large ammount of images in a mult-threaded way on a cluster. I must be able to select target projection, extents and so on.. just like [gdalwarp], but performing [IR-MAD] based on [PRRN] for remote sensing image mosaics.
+I (user) would like to have a tool build on top of [GDAL] that would perfrom mosaicing of large ammount of images in a mult-threaded way on a cluster, performing [IR-MAD] based on [PRRN] for remote sensing image mosaics. All input images are already aligned (projection and pixels).
 
 ### What is the outcome?
-The result will be a command-line java application that utilizes same functionality as [gdalwarp] but with special features (command line parameters of this application.
+The result will be a command-line java application that recieves inputs, flags, and produces output. Input parameters preferably be done mimicing [gdalwarp]
 
 ### What is done:
 
 Algorithm for [IR-MAD]. Single threaded. 2 Images.
 
 ### Assumptions:
-I assume, that any 2 datasets fit into memory (without compression).
+
+*Since we can use python and CCA needs to be parallel following assumtion is outdated, but for development simplicity, we still assume that:*
+> **Если это упростит задачу, можно считать, что две любые сцены помещаются польностью в память**
+> I assume, that any 2 datasets fit into memory (without compression).
 Without this assumption some algorithms will need to be implemented in batch fashion.
 i.e [CCA] and Orthogonal Regression will need to be fed with small batches, other
-than whole dataset. Such implementation, though easily done with TensorFlow, seems difficult to
-implement in Java language.
+than whole dataset. Such implementation, though easily done with TensorFlow, seems difficult to implement in Java language.
+
+- Any 2 images are aligned (projection and pixel)
 
 ### Notes from paper [PRRN]
 
@@ -80,9 +84,9 @@ Calculation steps:
 8. (Optional) program updates band values of each image.
 
 > TODO:
-> We need to create domain model, class diagram, parallel diagram, sequence diagram. 
+> We need to create domain model, class diagram, parallel diagram, sequence diagram.
 
-# Useful links 
+# Useful links
 [netlib-java] Fast linear algebra library can be used for implementing CCA, IR-MAD, and Orthogonal Regression
 
 # Glossary
