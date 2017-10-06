@@ -43,14 +43,15 @@ class CannonicalCorrelation(ModelBase):
         self.a = tf.Variable( [ [ np.random.normal(0,1) ] for i in range(band_num)], dtype=tf.float32, name = 'x_weights_' )
         self.b = tf.Variable( [ [ np.random.normal(0,1) ] for i in range(band_num)], dtype=tf.float32, name = 'y_weights_' )
 
-        xx_cov = tf.matmul( tf.transpose(self.X-x_mean), (self.X-x_mean) )/batch_size
-        yy_cov = tf.matmul( tf.transpose(self.Y-y_mean), (self.Y-y_mean) )/batch_size
-        xy_cov = tf.matmul( tf.transpose(self.X-x_mean), (self.Y-y_mean) )/batch_size
+        self.xx_cov = tf.matmul( tf.transpose(self.X-x_mean), (self.X-x_mean) )/batch_size
+        self.yy_cov = tf.matmul( tf.transpose(self.Y-y_mean), (self.Y-y_mean) )/batch_size
+        self.xy_cov = tf.matmul( tf.transpose(self.X-x_mean), (self.Y-y_mean) )/batch_size
 
-        norm1 = tf.sqrt( tf.matmul( tf.matmul(tf.transpose(self.a),xx_cov), self.a ) )
-        norm2 = tf.sqrt( tf.matmul( tf.matmul(tf.transpose(self.b),yy_cov), self.b ) )
+        
+        norm1 = tf.sqrt( tf.matmul( tf.matmul(tf.transpose(self.a),self.xx_cov), self.a ) )
+        norm2 = tf.sqrt( tf.matmul( tf.matmul(tf.transpose(self.b),self.yy_cov), self.b ) )
 
-        self.cost = -(tf.matmul( tf.matmul(tf.transpose( self.a ), xy_cov), self.b )/norm1/norm2)[0,0]
+        self.cost = -(tf.matmul( tf.matmul(tf.transpose( self.a ), self.xy_cov), self.b )/norm1/norm2)[0,0]
 
     def get_cost(self):
         return self.cost
