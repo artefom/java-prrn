@@ -89,6 +89,8 @@ Calculation steps:
 # Useful links
 [netlib-java] Fast linear algebra library can be used for implementing CCA, IR-MAD, and Orthogonal Regression
 
+[draw.io paper](https://github.com/artefom/prrn-mosaic) about CCA calulation process and benchmarks.
+
 # Glossary
 
 * [MAD] Multivariate Alternation Detection. Detects changes between two images
