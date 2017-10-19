@@ -26,8 +26,8 @@ than whole dataset. Such implementation, though easily done with TensorFlow, see
 
 ### Notes from paper [PRRN]
 
-#### Calculation steps for [RRN]
-[RRN] method addresses two overlaping images.
+#### Calculation steps for [backend.rrn.RRN]
+[backend.rrn.RRN] method addresses two overlaping images.
 1. [IR-MAD] is performed
 2. Othogonal regression with the selected invariant pixels is employed to calculate normalistion coefficients for each band of the subject image.
 
@@ -45,7 +45,7 @@ Look at python program
 
 > TODO:
 > 1. Determine what components will final product need
-> 2. Find more atomic pieces which are needed to build a software product, their dependencies. Like [IR-MAD] depends on [CCA] or [RRN] depends on [IR-MAD] and so on...
+> 2. Find more atomic pieces which are needed to build a software product, their dependencies. Like [IR-MAD] depends on [CCA] or [backend.rrn.RRN] depends on [IR-MAD] and so on...
 
 # Q & A
 
@@ -96,13 +96,13 @@ Calculation steps:
 some references: [python implementation](https://github.com/mortcanty/CRCDocker/blob/master/src/iMad.py) [port from R](https://rdrr.io/rforge/imad/man/iMad_original.html)
 Scientific paper: [Canty and Nielsen (2008)](http://www2.imm.dtu.dk/pubdb/views/edoc_download.php/5362/pdf/imm5362.pdf)
 
-* [RRN] - **Relative Radiometric Normalization**
+* [backend.rrn.RRN] - **Relative Radiometric Normalization**
 is a procedure used to prepare multitemporal image data sets for the detection of spectral changes associated with phenomena such as land cover change. This procedure reduces the numeric differences between two images that have been induced by disparities in the acquisition conditions (e.g. sensor performance, solar irradiance, atmospheric effects) rather than changes in surface reflectance.
 
 * [CCA] - Canonical Correlation Analysis. Used to decrease dimensionality of dataset. 
 
 [PRRN]: https://drive.google.com/open?id=0BxWRyyRCfA3gS0JEaTFpMWRLcXM "Parallel relative radiometric normalisation."
-[RRN]: http://www.sciencedirect.com/science/article/pii/0924271696000184 "Relative radiometric normalisation"
+[backend.rrn.RRN]: http://www.sciencedirect.com/science/article/pii/0924271696000184 "Relative radiometric normalisation"
 [IR-MAD]: http://www2.imm.dtu.dk/pubdb/views/edoc_download.php/5362/pdf/imm5362.pdf "Iteratively Reweighted Multivariate Alteration Detection"
 [MAD]: http://www2.imm.dtu.dk/pubdb/views/edoc_download.php/5362/pdf/imm5362.pdf "Multivariate Alteration Detection"
 [GDAL]: http://www.gdal.org/ "Geospatial Data Abstraction Library"
