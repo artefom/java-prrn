@@ -3,7 +3,6 @@ import frontend.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.BlockingQueue;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
@@ -13,7 +12,7 @@ public class Main {
     private static Controller backend;
     private static UI ui;
 
-    static class CmdPipe implements UI_Command_reciever {
+    static class CmdPipe implements UI_Command_receiver {
 
         public void add_file(String s) {
             backend.add_file(s);

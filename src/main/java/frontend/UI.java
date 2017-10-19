@@ -1,23 +1,22 @@
 package frontend;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Logger;
 import org.apache.commons.cli.*;
 
 public class UI {
 
-    UI_Command_reciever reciever;
+    UI_Command_receiver reciever;
     Logger log = Logger.getLogger(UI.class.getName());
+    String output_path;
 
     public UI() {
     }
 
-    public void setReciever(UI_Command_reciever i_reciever){
+    public void setReciever(UI_Command_receiver i_reciever){
         reciever = i_reciever;
     }
 
@@ -87,14 +86,13 @@ public class UI {
 
         for (String fpath : input_args) {
             inputfiles.addAll(getFilePaths(fpath));
-            reciever.add_file(fpath);
         }
 
         for (String fpath : inputfiles) {
-            System.out.println(fpath);
+            reciever.add_file(fpath);
         }
 
-        System.out.println(output_file_path);
+        output_path = output_file_path;
 
     }
 }
