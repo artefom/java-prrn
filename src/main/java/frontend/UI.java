@@ -52,6 +52,10 @@ public class UI {
         return new Vector<String>(Arrays.asList(path));
     }
 
+    private void save_graph() {
+
+    }
+
     public void processArguments(String[] args) {
 
         Options options = new Options();
@@ -65,6 +69,10 @@ public class UI {
         Option output = new Option("o", "output",true, "output file");
         output.setRequired(true);
         options.addOption(output);
+
+        Option graph_output_option = new Option("g", "graph_output",true, " .dot output of graph file");
+        graph_output_option.setRequired(false);
+        options.addOption(graph_output_option);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -82,6 +90,10 @@ public class UI {
 
         String[] input_args = cmd.getOptionValues("input");
         String output_file_path = cmd.getOptionValue("output");
+        String graph_output_file = cmd.getOptionValue("graph_output");
+
+        log.info("Graph output: "+graph_output_file );
+
         HashSet<String> inputfiles = new HashSet<>();
 
         for (String fpath : input_args) {
@@ -93,6 +105,12 @@ public class UI {
         }
 
         output_path = output_file_path;
+
+        if (graph_output_file != null) {
+            reciever.save_graph(graph_output_file);
+        }
+
+        reciever.execute();
 
     }
 }

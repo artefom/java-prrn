@@ -11,6 +11,9 @@ buildNumber.properties
 # Avoid logging files
 *log.txt*
 
+# Avoid graph export files
+*.dot
+
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar
 

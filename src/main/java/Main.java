@@ -14,16 +14,24 @@ public class Main {
 
     static class CmdPipe implements UI_Command_receiver {
 
+        @Override
         public void add_file(String s) {
             backend.add_file(s);
         }
 
+        @Override
         public void execute() {
             backend.execute();
         }
 
+        @Override
         public void set_process_count(int n) {
             backend.set_process_count(n);
+        }
+
+        @Override
+        public void save_graph(String filename) {
+            backend.save_graph(filename);
         }
     }
 

@@ -1,4 +1,4 @@
 package backend;
 
-public class RRNProcess {
+public class RRNProcess implements RRNProcessBase {
 }
