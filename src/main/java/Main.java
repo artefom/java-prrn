@@ -1,5 +1,8 @@
 import backend.Controller;
+import backend.rasterio.RasterGrid;
 import frontend.*;
+
+import org.gdal.gdal.gdal;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +39,9 @@ public class Main {
     }
 
     public static void main(String [] args) {
+
+        // Initialize gdal
+        gdal.AllRegister();
 
         // Load logging properties from file!
         // Note: logging levels
