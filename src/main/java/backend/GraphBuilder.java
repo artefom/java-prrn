@@ -74,7 +74,7 @@ public class GraphBuilder implements TaskProvider {
     /**
      * Finds adjacent images and record them to graph. build spanning tree.
      */
-    public void build_graph() {
+    private void build_graph() {
         log.info(String.format("Building graph for %d vertices, %d edges",
                 vertices_count(),edge_count()));
 
@@ -99,6 +99,7 @@ public class GraphBuilder implements TaskProvider {
      * @return collection of tasks
      */
     public Collection<TaskBase> get_tasks() {
+        build_graph();
 
         ArrayList<TaskBase> tasks = new ArrayList<>();
 
@@ -132,6 +133,7 @@ public class GraphBuilder implements TaskProvider {
         } catch (IOException ex) {
             log.severe(String.format("Error exporting graph to %s. Reason: %s",filename,ex.getMessage()) );
         }
+
     }
 
 }

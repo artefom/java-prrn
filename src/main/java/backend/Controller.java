@@ -22,6 +22,7 @@ public class Controller {
         gbuilder.set_task_factory(tfact);
         tshed.set_process_factory(pfact);
         tshed.set_task_provider(gbuilder);
+        tshed.set_process_count(10);
     }
 
     public void add_file(String path) throws IOException {
@@ -33,8 +34,6 @@ public class Controller {
     }
 
     public void execute() {
-        tshed.set_process_count(10);
-        gbuilder.build_graph();
         tshed.execute();
     }
 
