@@ -1,6 +1,8 @@
 package backend.processes;
 
 import backend.rasterio.RasterDataset;
+import backend.rrn.RRN;
+import backend.rrn.RRNResult;
 import backend.tasks.IRRNTask;
 import backend.tasks.ITaskProvider;
 
@@ -18,20 +20,19 @@ class RRNThread implements Runnable {
 
     @Override
     public void run() {
-        try {
+        // Use this variable to read tasks from task provider
+        IRRNTask current_task;
 
-            IRRNTask current_task;
+        // Grab tasks until queue is empty!
+        while ((current_task = task_provider.grab()) != null) {
+            RasterDataset source = current_task.get_source();
+            RasterDataset target = current_task.get_target();
 
-            // Grab tasks until queue is empty!
-            while ((current_task = task_provider.grab()) != null) {
-                RasterDataset source = current_task.get_source();
-                RasterDataset target = current_task.get_target();
-                Thread.sleep(Math.round(rand.nextDouble() * 100) + 100);
-                task_provider.release(current_task);
-            }
+            RRNResult res = RRN.calculate(source,target);
+            current_task.set_result(res);
 
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            // release task, so task provider knows it's done
+            task_provider.release(current_task);
         }
     }
 }
