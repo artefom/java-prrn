@@ -1,5 +1,7 @@
 package backend;
 
+import java.io.IOException;
+
 public class Controller {
 
     private GraphBuilder gbuilder;
@@ -22,7 +24,7 @@ public class Controller {
         tshed.set_task_provider(gbuilder);
     }
 
-    public void add_file(String path) {
+    public void add_file(String path) throws IOException {
         gbuilder.add_file(path);
     }
 

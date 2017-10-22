@@ -31,7 +31,7 @@ public class GraphBuilder implements TaskProvider {
         undirected_graph = new AsUndirectedGraph<>(graph);
     }
 
-    public void add_file(String filename) {
+    public void add_file(String filename) throws IOException {
         RasterDataset ds1 = RasterDataset.from_file(filename);
         graph.addVertex( ds1 );
 

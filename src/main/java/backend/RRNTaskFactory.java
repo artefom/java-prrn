@@ -2,6 +2,8 @@ package backend;
 
 import backend.rasterio.RasterDataset;
 
+import java.io.IOException;
+
 
 public class RRNTaskFactory implements TaskFactoryBase {
 
@@ -11,7 +13,7 @@ public class RRNTaskFactory implements TaskFactoryBase {
         return ret;
     }
 
-    public TaskBase create_task(String f1, String f2) {
+    public TaskBase create_task(String f1, String f2) throws IOException {
         RRNTask ret = new RRNTask();
         ret.assign_datasets(RasterDataset.from_file(f1),RasterDataset.from_file(f2));
         return ret;

@@ -1,5 +1,6 @@
 package backend.rasterio;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -29,8 +30,11 @@ public class RasterDataset {
     private RasterDataset() {
     }
 
-    private void open(String fname) {
+    private void open(String fname) throws IOException {
         ds = gdal.Open(fname,gdalconstConstants.GA_ReadOnly);
+        if (ds == null) {
+            throw new IOException("Could not open " + fname);
+        }
         rgrid = RasterGrid.fromDataset(ds);
     }
 
@@ -39,7 +43,7 @@ public class RasterDataset {
         return ds.GetDescription();
     }
 
-    public static RasterDataset from_file(String filename) {
+    public static RasterDataset from_file(String filename) throws IOException {
         RasterDataset ret = new RasterDataset();
         ret.open(filename);
         return ret;

@@ -18,7 +18,7 @@ public class Main {
     static class CmdPipe implements UI_Command_receiver {
 
         @Override
-        public void add_file(String s) {
+        public void add_file(String s) throws IOException {
             backend.add_file(s);
         }
 

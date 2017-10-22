@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.cli.*;
 
@@ -101,7 +102,12 @@ public class UI {
         }
 
         for (String fpath : inputfiles) {
-            reciever.add_file(fpath);
+            try {
+                reciever.add_file(fpath);
+            } catch (IOException ex) {
+                log.severe(ex.getMessage());
+                log.log(Level.FINE,"Stack trace: ", ex);
+            }
         }
 
         output_path = output_file_path;
