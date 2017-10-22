@@ -101,9 +101,16 @@ public class UI {
             inputfiles.addAll(getFilePaths(fpath));
         }
 
+        int max_input_files = 20;
+        int i = 0;
         for (String fpath : inputfiles) {
             try {
                 reciever.add_file(fpath);
+                i += 1;
+                if (i > max_input_files) {
+                    log.severe( "LIMITING INPUT FILES TO "+max_input_files );
+                    break;
+                }
             } catch (IOException ex) {
                 log.severe(ex.getMessage());
                 log.log(Level.FINE,"Stack trace: ", ex);
@@ -116,7 +123,36 @@ public class UI {
             reciever.save_graph(graph_output_file);
         }
 
+        System.out.println("Executing operations");
         reciever.execute();
 
+        try {
+            System.out.println();
+            while (reciever.is_running()) {
+                Thread.sleep(10);
+                print_progress_bar("Processing...",reciever.get_progress());
+            }
+            final_progress_bar("Success!     ",reciever.get_progress());
+        } catch (InterruptedException ignored) {};
+
+        reciever.join();
+    }
+
+    private static final int progress_bar_size = 50;
+    private static void print_progress_bar(String caption, double progress) {
+        int ticks = (int)Math.round(progress*(float)progress_bar_size);
+        int ticks_remaining = progress_bar_size-ticks;
+        System.out.print("\r"+caption+" |");
+        for (int i = 0; i != ticks; ++i) {
+            System.out.print('#');
+        }
+        for (int i = 0; i != ticks_remaining; ++i) {
+            System.out.print('.');
+        }
+        System.out.print("|");
+    }
+    private static void final_progress_bar(String caption, double progress) {
+        print_progress_bar(caption,progress);
+        System.out.println();
     }
 }

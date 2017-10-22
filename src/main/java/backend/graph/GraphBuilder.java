@@ -1,9 +1,9 @@
-package backend;
+package backend.graph;
 
 import backend.rasterio.RasterDataset;
+
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.UndirectedGraph;
-import org.jgrapht.WeightedGraph;
 import org.jgrapht.alg.KruskalMinimumSpanningTree;
 import org.jgrapht.ext.DOTExporter;
 import org.jgrapht.ext.IntegerNameProvider;
@@ -11,17 +11,17 @@ import org.jgrapht.ext.StringNameProvider;
 import org.jgrapht.graph.*;
 import org.jgrapht.alg.interfaces.MinimumSpanningTree;
 
-import java.awt.image.Raster;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class GraphBuilder implements TaskProvider {
+/**
+ * This Class builds graph for RRN processing.
+ */
+public class GraphBuilder {
 
     private static Logger log = Logger.getLogger(GraphBuilder.class.getName());
-
-    TaskFactoryBase tf;
 
     DefaultDirectedWeightedGraph<RasterDataset,DefaultWeightedEdge> graph;
     UndirectedGraph<RasterDataset,DefaultWeightedEdge> undirected_graph;
@@ -31,8 +31,7 @@ public class GraphBuilder implements TaskProvider {
         undirected_graph = new AsUndirectedGraph<>(graph);
     }
 
-    public void add_file(String filename) throws IOException {
-        RasterDataset ds1 = RasterDataset.from_file(filename);
+    public void add_file(RasterDataset ds1) {
         graph.addVertex( ds1 );
 
         for (RasterDataset ds2 : vertices()) {
@@ -43,7 +42,33 @@ public class GraphBuilder implements TaskProvider {
                 graph.setEdgeWeight(e,weight);
             }
         }
+    }
 
+    /**
+     * Get size of results arrays
+     * @return
+     */
+    public int get_results_size() {
+        return edge_count();
+    }
+
+    /**
+     * Populate results array
+     * @param source
+     * @param target
+     * @param weights
+     */
+    public void get_results( RasterDataset[] source, RasterDataset[] target, double[] weights ) {
+
+        build_graph();
+
+        int i = 0;
+        for (DefaultWeightedEdge e : edges()) {
+            source[i] = graph.getEdgeSource(e);
+            target[i] = graph.getEdgeTarget(e);
+            weights[i] = graph.getEdgeWeight(e);
+            i += 1;
+        }
     }
 
     public int vertices_count() {
@@ -93,29 +118,6 @@ public class GraphBuilder implements TaskProvider {
         graph.removeAllEdges(edges_for_deletion);
     }
 
-    /**
-     * Creates tasks for execution in TaskSheduler based on built graph.
-     * Each task contains info about 2 images and intended to be solved by RRNPorcess.
-     * @return collection of tasks
-     */
-    public Collection<TaskBase> get_tasks() {
-        build_graph();
-
-        ArrayList<TaskBase> tasks = new ArrayList<>();
-
-        for (DefaultWeightedEdge edge : edges()) {
-            RasterDataset ds_target = graph.getEdgeTarget(edge);
-            RasterDataset ds_source = graph.getEdgeSource(edge);
-            tasks.add( tf.create_task(ds_target,ds_source) );
-        }
-
-        return tasks;
-    }
-
-    public void set_task_factory(TaskFactoryBase tf) {
-        this.tf = tf;
-    }
-
     public void save_graph_dot(String filename) {
 
         // Make sure graph is builded
@@ -134,6 +136,14 @@ public class GraphBuilder implements TaskProvider {
             log.severe(String.format("Error exporting graph to %s. Reason: %s",filename,ex.getMessage()) );
         }
 
+    }
+
+    public static GraphBuilder from_datasets( Collection<RasterDataset> datasets ) {
+        GraphBuilder gbuilder = new GraphBuilder();
+        for (RasterDataset ds : datasets) {
+            gbuilder.add_file(ds);
+        }
+        return gbuilder;
     }
 
 }

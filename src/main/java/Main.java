@@ -36,6 +36,21 @@ public class Main {
         public void save_graph(String filename) {
             backend.save_graph(filename);
         }
+
+        @Override
+        public boolean is_running() {
+            return backend.is_running();
+        }
+
+        @Override
+        public double get_progress() {
+            return backend.get_progress();
+        }
+
+        @Override
+        public void join() {
+            backend.join();
+        }
     }
 
     public static void main(String [] args) {
