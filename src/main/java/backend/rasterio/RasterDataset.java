@@ -24,11 +24,11 @@ public class RasterDataset {
     private static Logger log = Logger.getLogger(RasterDataset.class.getName());
 
     private Dataset ds;
-    private static Random rand = new Random();
     private RasterGrid rgrid;
 
     private RasterDataset() {
     }
+
 
     private void open(String fname) throws IOException {
         ds = gdal.Open(fname,gdalconstConstants.GA_ReadOnly);
@@ -38,29 +38,46 @@ public class RasterDataset {
         rgrid = RasterGrid.fromDataset(ds);
     }
 
+    /**
+     * Get filename of currently opened dataset
+     * @return
+     */
     public String get_filename() {
         if (ds == null) return "";
         return ds.GetDescription();
     }
 
+    /**
+     * Create dataset from file
+     * @param filename
+     * @return
+     * @throws IOException
+     */
     public static RasterDataset from_file(String filename) throws IOException {
         RasterDataset ret = new RasterDataset();
         ret.open(filename);
         return ret;
     }
 
-    public double intersection_area(RasterDataset other) {
-        RasterGrid intersection_gird = rgrid.intersection(other.rgrid);
-        if (intersection_gird == null)
-            return 0;
-
-        return intersection_gird.get_height()*intersection_gird.get_width();
+    public RasterGrid grid() {
+        return rgrid;
     }
 
-    public double adjacent_weight(RasterDataset other) {
-        return intersection_area(other);
+    /**
+     * Get height of raster in pixels
+     * @return
+     */
+    public int get_height() {
+        return rgrid.get_height();
     }
 
+    /**
+     * Get width of raster in pixels
+     * @return
+     */
+    public int get_width() {
+        return rgrid.get_width();
+    }
 
     @Override
     public int hashCode() {

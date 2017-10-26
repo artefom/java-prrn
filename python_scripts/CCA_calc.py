@@ -23,18 +23,18 @@ class CCA():
 		"""
 		calculate covariance matrix of 2 variables
 		"""
-		return ( xy_sum - np.matmul(x_sum,y_sum.T)/n )/(n-1)
+        return ( xy_sum - np.matmul(x_sum,y_sum.T)/n )/(n-1)
 
 
-	def push(self,x,y):
-		"""
-		push x and y to caclulate cca. x and y values are not stored
-		"""
-		self.x_sum += np.sum(x,axis=0)[:,np.newaxis]
-		self.y_sum += np.sum(y,axis=0)[:,np.newaxis]
-		self.xy_sum += np.matmul(np.transpose(x),y)
-		self.xx_sum += np.matmul(np.transpose(x),x)
-		self.yy_sum += np.matmul(np.transpose(y),y)
+    def push(self,x,y):
+        """
+        push x and y to caclulate cca. x and y values are not stored
+        """
+        self.x_sum += np.sum(x,axis=0)[:,np.newaxis]
+        self.y_sum += np.sum(y,axis=0)[:,np.newaxis]
+        self.xy_sum += np.matmul(np.transpose(x),y)
+        self.xx_sum += np.matmul(np.transpose(x),x)
+        self.yy_sum += np.matmul(np.transpose(y),y)
 		self.n += np.shape(x)[0]
 
 	def pull(self,x,y):

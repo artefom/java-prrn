@@ -2,6 +2,7 @@ package backend.graph;
 
 import backend.rasterio.RasterDataset;
 
+import backend.rasterio.RasterGrid;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.KruskalMinimumSpanningTree;
@@ -36,7 +37,8 @@ public class GraphBuilder {
 
         for (RasterDataset ds2 : vertices()) {
             if (ds1.equals(ds2)) continue;
-            double weight = ds1.adjacent_weight(ds2);
+            RasterGrid intersection_grid = ds1.grid().intersection(ds2.grid());
+            double weight = intersection_grid.get_width()*intersection_grid.get_height();
             if (weight > 0) {
                 DefaultWeightedEdge e = graph.addEdge(ds1,ds2);
                 graph.setEdgeWeight(e,weight);

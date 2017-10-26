@@ -1,5 +1,9 @@
 package backend.rasterio;
 
+import backend.utils.CoordUtils;
+import backend.utils.HashUtils;
+import backend.utils.Vec2d;
+import backend.utils.Vec2i;
 import org.gdal.gdal.*;
 import org.gdal.osr.osr;
 import org.gdal.osr.SpatialReference;
@@ -222,6 +226,33 @@ public class RasterGrid {
         return getNumPix(xMax,xMin,xRes);
     }
 
+    public Vec2d wld2pix(double x, double y) {
+        return CoordUtils.wld2pix(makeGeoTransform(),x,y);
+
+    }
+
+    public Vec2d wld2pix(Vec2d coord) {
+        return wld2pix(coord.x,coord.y);
+    }
+
+    public Vec2d wld2pix(Vec2i coord) {
+        return wld2pix(coord.x,coord.y);
+    }
+
+
+    public Vec2d pix2wld(double x, double y) {
+        return CoordUtils.wld2pix(makeGeoTransform(),x,y);
+    }
+
+    public Vec2d pix2wld(Vec2d coord) {
+        return pix2wld(coord.x,coord.y);
+    }
+
+    public Vec2d pix2wld(Vec2i coord) {
+        return pix2wld(coord.x,coord.y);
+    }
+
+
 
     /**
      * Works out how many pixels lie between the given min and max,
@@ -266,4 +297,38 @@ public class RasterGrid {
         int numWholePix = (int)round_away(numPix);
         return valOnGrid + numWholePix * res;
     }
+
+    @Override
+    public int hashCode() {
+        int[] hashcodes = new int[]{
+                this.projection.hashCode(),
+                HashUtils.hash(this.xRes),
+                HashUtils.hash(this.yRes),
+                HashUtils.hash(this.xMin),
+        };
+        return HashUtils.CombineHashCodes(hashcodes);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (other == this) return true;
+        if (!(other instanceof RasterDataset))return false;
+        RasterGrid o = (RasterGrid)other;
+
+        return
+                this.projection == o.projection &&
+        this.xRes == o.xRes &&
+        this.yRes == o.yRes &&
+        this.xMin == o.xMin &&
+        this.yMin == o.yMin &&
+        this.xMax == o.xMax &&
+        this.yMax == o.yMax;
+    }
+
+    @Override
+    protected RasterGrid clone() {
+        return new RasterGrid(xMin, xMax, yMin, yMax, xRes, yRes, projection);
+    }
+
 }
