@@ -98,7 +98,7 @@ public class ImageReader {
                 (xblock+1)*windowsize.x,
                 (yblock+1)*windowsize.y);
 
-        if (bot_coord.x > total_size.x) bot_coord.y=total_size.x;
+        if (bot_coord.x > total_size.x) bot_coord.x =total_size.x;
         if (bot_coord.y > total_size.y) bot_coord.y = total_size.y;
 
 
@@ -111,6 +111,7 @@ public class ImageReader {
         // calculate block size
 
         Vec2i block_size = new Vec2i(bot_coord.x-top_coord.x,bot_coord.y-top_coord.y);
+
         info.set_block_size(block_size.x,block_size.y);
 
         return info;
