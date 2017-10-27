@@ -100,7 +100,7 @@ public class RasterGrid {
         int nrows = ds.GetRasterYSize();
         String projection = ds.GetProjection();
 
-        return new RasterGrid(geotransform,ncols,nrows,projection);
+        return new RasterGrid(geotransform,nrows,ncols,projection);
     }
 
     /**
@@ -226,6 +226,10 @@ public class RasterGrid {
         return getNumPix(xMax,xMin,xRes);
     }
 
+    public String get_projection() {
+        return projection;
+    }
+
     public Vec2d wld2pix(double x, double y) {
         return CoordUtils.wld2pix(makeGeoTransform(),x,y);
 
@@ -241,7 +245,7 @@ public class RasterGrid {
 
 
     public Vec2d pix2wld(double x, double y) {
-        return CoordUtils.wld2pix(makeGeoTransform(),x,y);
+        return CoordUtils.pix2wld(makeGeoTransform(),x,y);
     }
 
     public Vec2d pix2wld(Vec2d coord) {
