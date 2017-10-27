@@ -1,7 +1,6 @@
 package backend.rasterio;
 
 import java.io.IOException;
-import java.util.Random;
 import java.util.logging.Logger;
 
 import org.gdal.gdal.*;
@@ -61,22 +60,6 @@ public class RasterDataset {
 
     public RasterGrid grid() {
         return rgrid;
-    }
-
-    /**
-     * Get height of raster in pixels
-     * @return
-     */
-    public int get_height() {
-        return rgrid.get_height();
-    }
-
-    /**
-     * Get width of raster in pixels
-     * @return
-     */
-    public int get_width() {
-        return rgrid.get_width();
     }
 
     @Override
