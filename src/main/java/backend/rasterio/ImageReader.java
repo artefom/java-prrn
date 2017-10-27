@@ -112,7 +112,29 @@ public class ImageReader {
 
         Vec2i block_size = new Vec2i(bot_coord.x-top_coord.x,bot_coord.y-top_coord.y);
 
+        // set size of current block
         info.set_block_size(block_size.x,block_size.y);
+
+        // Pass grid to user
+        info.grid = rgrid.clone();
+
+        // Read all datasets to arraylist
+        info.data = new ArrayList<>();
+        info.datasets = new ArrayList<>();
+        for (RasterDataset ds : datasets) {
+
+            // Calculate bounds to be read
+            int xoff = 0;
+            int yoff = 0;
+            int xsize = 10;
+            int ysize = 10;
+
+
+            // Read and record to data
+            double[][] chunk = read_block(ds.dataset(),xoff,yoff,xsize,ysize);
+            info.data.add(chunk);
+            info.datasets.add(ds.dataset());
+        }
 
         return info;
     };
@@ -170,6 +192,11 @@ public class ImageReader {
         }
 
         ImageReader reader = new ImageReader(intersection_grid);
+
+        // Add all datasets to reader
+        for (RasterDataset ds : datasets) {
+            reader.add_dataset(ds);
+        }
 
         return reader;
     }

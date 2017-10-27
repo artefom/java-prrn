@@ -61,6 +61,7 @@ public class RasterDataset {
     public RasterGrid grid() {
         return rgrid;
     }
+    public Dataset dataset(){return ds;};
 
     @Override
     public int hashCode() {
