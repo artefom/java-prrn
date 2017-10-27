@@ -75,8 +75,8 @@ public class RasterGridTest {
 
         // Read gotransform to array so we can change it later
         double[] geotransform = g2.makeGeoTransform();
-        // Change resolution of geotransform from 30 to 30.001
-        geotransform[1] = 30.001;
+        // Change resolution of geotransform by 0.001
+        geotransform[1] += 0.001;
         RasterGrid g4 = new RasterGrid(geotransform,10,10,g1.get_projection());
         assertFalse(g1.equalPixSize(g4));
         assertFalse(g2.equalPixSize(g4));
