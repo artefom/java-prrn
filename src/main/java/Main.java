@@ -1,12 +1,5 @@
 import backend.Controller;
-import backend.rasterio.RasterDataset;
-import backend.rasterio.RasterGrid;
 import frontend.*;
-
-import org.gdal.gdal.Dataset;
-import org.gdal.gdal.gdal;
-import org.gdal.gdalconst.gdalconstConstants;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.LogManager;
