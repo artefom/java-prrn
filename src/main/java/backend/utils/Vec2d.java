@@ -12,6 +12,10 @@ public class Vec2d {
         this.y = y;
     }
 
+    public Vec2i round() {
+        return new Vec2i((int)Math.round(x),(int)Math.round(y));
+    }
+
     @Override
     public int hashCode() {
         return (23+HashUtils.hash(x)*31)*31+HashUtils.hash(y)*31;
