@@ -133,6 +133,9 @@ public class ImageReader {
             int xsize = px_br.x-px_tl.x;
             int ysize = px_br.y-px_tl.y;
 
+            System.out.println("Reading size: "+xsize+" "+ysize);
+            System.out.println("Reading x: "+xoff+" - "+(xoff+xsize));
+            System.out.println("Reading y: "+yoff+" - "+(yoff+ysize));
 
             // Read and record to data
             double[][] chunk = read_block(ds.dataset(),xoff,yoff,xsize,ysize);
