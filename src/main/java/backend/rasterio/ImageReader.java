@@ -123,11 +123,15 @@ public class ImageReader {
         info.datasets = new ArrayList<>();
         for (RasterDataset ds : datasets) {
 
+            Vec2i px_tl = ds.grid().wld2pix(block_tl).round();
+            Vec2i px_br = ds.grid().wld2pix(block_br).round();
+
+
             // Calculate bounds to be read
-            int xoff = 0;
-            int yoff = 0;
-            int xsize = 10;
-            int ysize = 10;
+            int xoff = px_tl.x;
+            int yoff = px_tl.y;
+            int xsize = px_br.x-px_tl.x;
+            int ysize = px_br.y-px_tl.y;
 
 
             // Read and record to data
