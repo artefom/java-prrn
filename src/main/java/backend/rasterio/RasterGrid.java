@@ -44,8 +44,8 @@ public class RasterGrid {
 //                 xMin=None, xMax=None, yMin=None, yMax=None, xRes=None, yRes=None):
 
     // extent of current raster grid;
-    private double xRes,yRes,xMin,yMin,xMax,yMax;
-    private String projection;
+    public double xRes,yRes,xMin,yMin,xMax,yMax;
+    public String projection;
 
     /**
      * Constructor with explicit internal values

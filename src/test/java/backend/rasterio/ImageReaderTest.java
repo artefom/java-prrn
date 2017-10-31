@@ -1,5 +1,7 @@
 package backend.rasterio;
 
+import backend.utils.BufferUtils;
+import backend.utils.TypeUtils;
 import org.gdal.gdal.gdal;
 import org.gdal.gdalconst.gdalconstConstants;
 import org.junit.Test;
@@ -9,6 +11,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
 
@@ -65,20 +68,27 @@ public class ImageReaderTest {
         assertEquals(info.data.get(1).length,12);
 
         // Make sure number of pixels is correct
+
         for (int j = 0; j != 12; ++j) {
-            assertEquals(expected_width * expected_height, info.data.get(0)[j].length);
+            int data_type = info.datasets.get(0).GetRasterBand(j+1).getDataType();
+            int pixel_num = info.data.get(0)[j].remaining()/ TypeUtils.get_size(data_type);
+            assertEquals(expected_width * expected_height, pixel_num);
         }
         // Now, make sure that pixel values are valid by calculating statistics
 
         // Make sure statistics match for area read
 
         //Dataset 1,  Band 1
-        assertEquals( 8513.5624178187409, calc_mean( info.data.get(0)[0] ), 1e-8 );
-        assertEquals( 576.95433514124056, calc_std( info.data.get(0)[0] ), 1e-8 );
+        int data_type = info.datasets.get(0).GetRasterBand(1).getDataType();
+        double[] data = BufferUtils.toDoubleArr( info.data.get(0)[0], data_type );
+        assertEquals( 8513.5624178187409, calc_mean( data ), 1e-8 );
+        assertEquals( 576.95433514124056, calc_std( data ), 1e-8 );
 
         //Dataset 2,  Band 1
-        assertEquals( 9949.9581536098303, calc_mean( info.data.get(1)[0] ), 1e-8 );
-        assertEquals( 586.3154600610809, calc_std( info.data.get(1)[0] ), 1e-8 );
+        data_type = info.datasets.get(0).GetRasterBand(1).getDataType();
+        data = BufferUtils.toDoubleArr( info.data.get(1)[0], data_type );
+        assertEquals( 9949.9581536098303, calc_mean( data ), 1e-8 );
+        assertEquals( 586.3154600610809, calc_std( data ), 1e-8 );
 
     }
 

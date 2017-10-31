@@ -1,11 +1,15 @@
 package backend.rasterio;
 
+import backend.utils.BufferUtils;
 import backend.utils.Vec2d;
 import backend.utils.Vec2i;
 import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -138,24 +142,36 @@ public class ImageReader {
             System.out.println("Reading y: "+yoff+" - "+(yoff+ysize));
 
             // Read and record to data
-            double[][] chunk = read_block(ds.dataset(),xoff,yoff,xsize,ysize);
+            ByteBuffer[] chunk = read_block(ds.dataset(),xoff,yoff,xsize,ysize,ds.get_type());
+
             info.data.add(chunk);
             info.datasets.add(ds.dataset());
+
         }
 
         return info;
     };
 
-    public static double[][] read_block(Dataset ds, int xoff, int yoff, int xsize, int ysize) {
-
-        int raster_size = xsize*ysize;
+    /**
+     * Read block of data from multiple raster bands into single byte buffer
+     * @param ds
+     * @param xoff
+     * @param yoff
+     * @param xsize
+     * @param ysize
+     * @param type
+     * @return
+     */
+    public static ByteBuffer[] read_block(Dataset ds, int xoff, int yoff, int xsize, int ysize, int type) {
         int n_layers = ds.getRasterCount();
 
-        double[][] ret = new double[n_layers][raster_size];
+        ByteBuffer[] ret = new ByteBuffer[n_layers];
 
         for (int layer_n = 0; layer_n != ds.getRasterCount(); ++layer_n) {
+            ByteBuffer bb = BufferUtils.allocateDirect(type,xsize*ysize);
             Band b = ds.GetRasterBand(layer_n+1);
-            b.ReadRaster(xoff,yoff,xsize,ysize,ret[layer_n]);
+            b.ReadRaster_Direct(xoff,yoff,xsize,ysize,xsize,ysize,type,bb,0,0);
+            ret[layer_n] = bb;
         }
 
         return ret;

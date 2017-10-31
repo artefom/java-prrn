@@ -3,6 +3,7 @@ package backend.rasterio;
 import backend.utils.Vec2d;
 import org.gdal.gdal.Dataset;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 /**
@@ -14,7 +15,7 @@ public class BlockInfo {
     /**
      * Data storage arranged by separate files
      */
-    public ArrayList<double[][]> data;
+    public ArrayList<ByteBuffer[]> data;
     public ArrayList<Dataset> datasets;
 
     public RasterGrid grid;

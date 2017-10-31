@@ -46,6 +46,12 @@ public class RasterDataset {
         return ds.GetDescription();
     }
 
+    public int get_type() {
+        return ds.GetRasterBand(1).getDataType();
+    }
+    public int block_width() {return ds.GetRasterBand(1).GetBlockXSize();}
+    public int block_height() {return ds.GetRasterBand(1).GetBlockYSize();}
+
     /**
      * Create dataset from file
      * @param filename

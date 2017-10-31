@@ -11,6 +11,11 @@ public class Vec2i {
         this.y = y;
     }
 
+    public void set(Vec2i other) {
+        this.x = other.x;
+        this.y = other.y;
+    }
+
     @Override
     public int hashCode() {
         return (23+x*31)*31+y*31;

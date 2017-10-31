@@ -12,6 +12,11 @@ public class Vec2d {
         this.y = y;
     }
 
+    public void set(Vec2d other) {
+        this.x = other.x;
+        this.y = other.y;
+    }
+
     public Vec2i round() {
         return new Vec2i((int)Math.round(x),(int)Math.round(y));
     }
