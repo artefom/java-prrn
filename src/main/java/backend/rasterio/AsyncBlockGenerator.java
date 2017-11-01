@@ -25,12 +25,6 @@ public class AsyncBlockGenerator {
     private final int n_vertical_blocks;
     private final int n_blocks;
 
-    // x and y position of tl block and bottom right block
-    private final int block_xbeg;
-    private final int block_ybeg;
-    private final int block_xend;
-    private final int block_yend;
-
     private final Vec2i ref_px_min;
     private final Vec2i ref_px_max;
 
@@ -69,14 +63,6 @@ public class AsyncBlockGenerator {
         int swap_buf;
         if (ref_px_min.x > ref_px_max.x) {swap_buf = ref_px_min.x; ref_px_min.x = ref_px_max.x; ref_px_max.x = swap_buf;}
         if (ref_px_min.y > ref_px_max.y) {swap_buf = ref_px_min.y; ref_px_min.y = ref_px_max.y; ref_px_max.y = swap_buf;}
-
-        // Calculate ids of start block
-        block_xbeg = (ref_px_min.x/bw);
-        block_ybeg = (ref_px_min.y/bh);
-
-        // Calculate ids of end block
-        block_xend = (ref_px_max.x/bw+(ref_px_max.x%bw == 0 ? 0 : 1));
-        block_yend = (ref_px_max.y/bh+(ref_px_max.y%bh == 0 ? 0 : 1));
 
     }
 
