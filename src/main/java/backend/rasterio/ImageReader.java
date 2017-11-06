@@ -90,7 +90,8 @@ public class ImageReader {
         BlockInfo info = new BlockInfo();
 
         // Set total blocks to info
-        info.set_totalblocks(totalblocks.x,totalblocks.y);
+        info.totalxblocks = totalblocks.x;
+        info.totalyblocks = totalblocks.y;
 
         Vec2i total_size = get_total_size();
 
@@ -110,21 +111,23 @@ public class ImageReader {
         // convert them into real-world coordinates
         Vec2d block_tl = rgrid.pix2wld(top_coord);
         Vec2d block_br = rgrid.pix2wld(bot_coord);
-        info.set_block_bounds(block_tl,block_br);
+        info.world_tl = block_tl;
+        info.world_br = block_br;
 
         // calculate block size
 
         Vec2i block_size = new Vec2i(bot_coord.x-top_coord.x,bot_coord.y-top_coord.y);
 
         // set size of current block
-        info.set_block_size(block_size.x,block_size.y);
+        info.width = block_size.x;
+        info.height = block_size.y;
 
         // Pass grid to user
         info.grid = rgrid.clone();
 
         // Read all datasets to arraylist
-        info.data = new ArrayList<>();
-        info.datasets = new ArrayList<>();
+        ArrayList<ByteBuffer[]> info_data = new ArrayList<>();
+        ArrayList<Dataset> info_datasets = new ArrayList<>();
         for (RasterDataset ds : datasets) {
 
             Vec2i px_tl = ds.grid().wld2pix(block_tl).round();
@@ -137,16 +140,31 @@ public class ImageReader {
             int xsize = px_br.x-px_tl.x;
             int ysize = px_br.y-px_tl.y;
 
-            System.out.println("Reading size: "+xsize+" "+ysize);
-            System.out.println("Reading x: "+xoff+" - "+(xoff+xsize));
-            System.out.println("Reading y: "+yoff+" - "+(yoff+ysize));
-
             // Read and record to data
             ByteBuffer[] chunk = read_block(ds.dataset(),xoff,yoff,xsize,ysize,ds.get_type());
 
-            info.data.add(chunk);
-            info.datasets.add(ds.dataset());
+            info_data.add(chunk);
+            info_datasets.add(ds.dataset());
+        }
 
+        // ASSUME ALL DATASETS HAVE EQUAL NUMBER OF BANDS
+        int n_bands = info_data.get(0).length;
+
+        info.set_datasets_info(info_datasets.size(),info_data.get(0).length);
+
+        for (int dataset_id = 0; dataset_id != info_datasets.size(); ++dataset_id) {
+            for (int band_id = 0; band_id != n_bands; ++band_id) {
+
+                // Assign dataset
+                info.set_dataset(dataset_id,info_datasets.get(dataset_id));
+
+                // Assign data
+                info.set_data(dataset_id,band_id,info_data.get(dataset_id)[band_id]);
+
+                // Assign data type
+                info.set_data_type(dataset_id,band_id,
+                        datasets.get(dataset_id).dataset().GetRasterBand(band_id+1).getDataType());
+            }
         }
 
         return info;

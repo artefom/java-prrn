@@ -45,6 +45,42 @@ public class BufferUtils {
         throw new IllegalArgumentException();
     }
 
+    public static long[] toLongArr(ByteBuffer bb, int gdal_type) {
+        long[] ret = new long[bb.remaining()/TypeUtils.get_size(gdal_type)];
+        if (gdal_type == gdalconst.GDT_UInt16) {
+            for (int i = 0; i != ret.length; ++i) {
+                ret[i] = Short.toUnsignedLong(bb.getShort());
+            }
+            return ret;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public static int[] toIntArr(ByteBuffer bb, int gdal_type) {
+        int[] ret = new int[bb.remaining()/TypeUtils.get_size(gdal_type)];
+        if (gdal_type == gdalconst.GDT_UInt16) {
+            for (int i = 0; i != ret.length; ++i) {
+                ret[i] = Short.toUnsignedInt(bb.getShort());
+            }
+            return ret;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public static short[] toShortArr(ByteBuffer bb, int gdal_type) {
+        short[] ret = new short[bb.remaining()/TypeUtils.get_size(gdal_type)];
+        if (gdal_type == gdalconst.GDT_UInt16) {
+            throw new IllegalArgumentException("gdal type GDT_UInt16 does not convert into signed short");
+        }
+        if (gdal_type == gdalconst.GDT_Int16) {
+            for (int i = 0; i != ret.length; ++i) {
+                ret[i] = bb.getShort();
+            }
+            return ret;
+        }
+        throw new IllegalArgumentException();
+    }
+
     private static double[] toDoubleArr(ByteBuffer bb) {
         double[] ret = new double[bb.remaining()];
         bb.asDoubleBuffer().get(ret);

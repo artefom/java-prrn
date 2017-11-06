@@ -72,6 +72,10 @@ public class AsyncBlockGenerator {
         return cur_block;
     }
 
+    public RasterGrid get_grid() {
+        return read_grid;
+    }
+
     public int get_n_datasets() {
         return datasets.length;
     }
@@ -221,7 +225,7 @@ public class AsyncBlockGenerator {
      * @param datasets datasets to find intersection of
      * @return raster grid representing area included in each dataset
      */
-    public static RasterGrid intersection(RasterDataset[] datasets) {
+    private static RasterGrid intersection(RasterDataset[] datasets) {
         RasterGrid intersection_grid = datasets[0].grid();
 
         for (int i = 1; i < datasets.length; ++i) {
@@ -232,26 +236,43 @@ public class AsyncBlockGenerator {
         return intersection_grid;
     };
 
-    public static AsyncBlockGenerator from_datasets(RasterDataset[] datasets, READ_AREA read_area) {
+    // Block generator for custom block size
+    public static AsyncBlockGenerator from_datasets(RasterDataset[] datasets,
+            int bxoff, int byoff,
+            int bw   , int bh, READ_AREA read_area) {
+
         RasterGrid read_grid = null;
+
+        // Calculate read based on area to read
         if (read_area == READ_AREA.INTERSECTION) {
-
             read_grid = intersection(datasets);
-
-            // Calculate block size to match first dataset
-            int bw = datasets[0].block_width();
-            int bh = datasets[0].block_height();
-
-            // Calculate block offset to match first dataset
-            Vec2i offset = read_grid.wld2pix( datasets[0].grid().pix2wld(0,0) ).round();
-            int bxoff = offset.x;
-            int byoff = offset.y;
-
-            return new AsyncBlockGenerator(datasets,read_grid,bxoff,byoff,bw,bh);
-
         } else {
             throw new IllegalArgumentException("Not implemented for read_area = "+read_area.name());
         }
+
+        return new AsyncBlockGenerator(datasets,read_grid,bxoff,byoff,bw,bh);
+    }
+
+    public static AsyncBlockGenerator from_datasets(RasterDataset[] datasets, READ_AREA read_area) {
+
+        RasterGrid read_grid = null;
+        if (read_area == READ_AREA.INTERSECTION) {
+            read_grid = intersection(datasets);
+        } else {
+            throw new IllegalArgumentException("Not implemented for read_area = "+read_area.name());
+        }
+
+        // Calculate block size to match first dataset
+        int bw = datasets[0].block_width();
+        int bh = datasets[0].block_height();
+
+        // Calculate block offset to match first dataset
+        Vec2i offset = read_grid.wld2pix(datasets[0].grid().pix2wld(0, 0)).round();
+        int bxoff = offset.x;
+        int byoff = offset.y;
+
+        return new AsyncBlockGenerator(datasets, read_grid, bxoff, byoff, bw, bh);
+
     }
 
     /**
@@ -264,7 +285,7 @@ public class AsyncBlockGenerator {
      * @param ysize y size of area
      * @return number of blocks intersecting with the area
      */
-    public static int calc_block_num(int bw, int bh, int xoff, int yoff, int xsize, int ysize) {
+    static int calc_block_num(int bw, int bh, int xoff, int yoff, int xsize, int ysize) {
 
         int xend = xoff + xsize;
         int yend = yoff + ysize;

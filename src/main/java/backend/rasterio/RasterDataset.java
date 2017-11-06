@@ -52,6 +52,10 @@ public class RasterDataset {
     public int block_width() {return ds.GetRasterBand(1).GetBlockXSize();}
     public int block_height() {return ds.GetRasterBand(1).GetBlockYSize();}
 
+    public void delete() {
+        ds.delete();
+    }
+
     /**
      * Create dataset from file
      * @param filename
