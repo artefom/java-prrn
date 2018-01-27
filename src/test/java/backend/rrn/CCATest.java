@@ -2,6 +2,7 @@ package backend.rrn;
 
 import static org.ejml.EjmlUnitTests.*;
 import org.ejml.UtilEjml;
+import org.ejml.data.DMatrix2x2;
 import org.ejml.data.DMatrixRMaj;
 import static org.ejml.dense.row.CommonOps_DDRM.*;
 
@@ -18,7 +19,7 @@ import static org.junit.Assert.*;
 
 public class CCATest {
 
-    private static final double TOL = 1e-5;
+    private static final double TOL = 1e-4;
 
     public static String[][] read_csv(String filename) throws IOException {
         String thisLine;
@@ -106,8 +107,35 @@ public class CCATest {
         assertEquals(expected_xx_cov_sqrt_inv,CCA_calc.xx_cov_sqrt_inv, TOL);
         assertEquals(expected_yy_cov_sqrt_inv,CCA_calc.yy_cov_sqrt_inv, TOL);
 
+//        System.out.println("A");
 //        System.out.println(CCA_calc.a);
-        System.out.println(CCA_calc.b);
+//        System.out.println("B");
+//        System.out.println(CCA_calc.b);
+
+        // Print linear regression result
+
+        DMatrixRMaj regr_ret = new DMatrixRMaj(n_bands,2);
+
+        Regr_comp.linear_regression(
+                CCA_calc.n,
+                extract( CCA_calc.a, 0, n_bands, 0, 1), // 0-band of a
+                extract( CCA_calc.b, 0,n_bands,0,1), // 0-band of b
+                CCA_calc.x_sum,
+                CCA_calc.y_sum,
+                CCA_calc.xy_sum,
+                CCA_calc.xx_sum,
+                regr_ret,
+                0,
+                0
+                );
+
+        System.out.println("Linear regression output");
+        System.out.println(regr_ret);
+
+
+
+
+//        System.out.println(CCA_calc.b);
 //
 //        DMatrixRMaj xx_cov = new DMatrixRMaj(n_bands,n_bands);
 //        CCA_calc.calc_cov(CCA_calc.xx_sum,CCA_calc.x_sum,CCA_calc.x_sum,n,xx_cov);

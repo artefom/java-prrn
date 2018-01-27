@@ -14,31 +14,31 @@ import java.util.Comparator;
 
 import static org.ejml.dense.row.CommonOps_DDRM.*;
 
-class ArrayIndexComparatorEig implements Comparator<Integer>
-{
-    private final EigenDecomposition_F64 eig;
-
-    public ArrayIndexComparatorEig(EigenDecomposition_F64 eig)
-    {
-        this.eig = eig;
-    }
-
-    public void createIndexArray(Integer[] indexes)
-    {
-        int len = eig.getNumberOfEigenvalues();
-        for (int i = 0; i < len; i++)
-        {
-            indexes[i] = i; // Autoboxing
-        }
-    }
-
-    @Override
-    public int compare(Integer index1, Integer index2)
-    {
-        // Autounbox from Integer to int to use as array indexes
-        return -Double.compare( eig.getEigenvalue(index1).real, eig.getEigenvalue(index2).real );
-    }
-}
+//class ArrayIndexComparatorEig implements Comparator<Integer>
+//{
+//    private final EigenDecomposition_F64 eig;
+//
+//    public ArrayIndexComparatorEig(EigenDecomposition_F64 eig)
+//    {
+//        this.eig = eig;
+//    }
+//
+//    public void createIndexArray(Integer[] indexes)
+//    {
+//        int len = eig.getNumberOfEigenvalues();
+//        for (int i = 0; i < len; i++)
+//        {
+//            indexes[i] = i; // Autoboxing
+//        }
+//    }
+//
+//    @Override
+//    public int compare(Integer index1, Integer index2)
+//    {
+//        // Autounbox from Integer to int to use as array indexes
+//        return -Double.compare( eig.getEigenvalue(index1).real, eig.getEigenvalue(index2).real );
+//    }
+//}
 
 public class CCA {
 
@@ -53,13 +53,12 @@ public class CCA {
     // Declared with computation speedup in mind
     private DMatrixRMaj n_bands_vec_buf,n_bands_mat_buf,n_bands_mat_buf2;
 
-    // SQRTM variables
-    private DMatrixRMaj eigenvals_buf,eigenvecs_buf;
-    private DMatrixRMaj sqrt_buf;
-    private Integer[] index_array;
+    // Computition engines
+    private Cov_comp cov_comp;
+    private Sqrtm_comp sqrtm_comp;
+    private Regr_comp regr_comp;
+    private Sorted_eig_comp sorted_eig_comp;
 
-    // Decomposition engine
-    private SymmetricQRAlgorithmDecomposition_DDRM decomp;
 
     /**
      * Setup, initialise matrices, allocate memory
@@ -88,19 +87,10 @@ public class CCA {
         n_bands_mat_buf = new DMatrixRMaj(n_bands, n_bands);
         n_bands_mat_buf2 = new DMatrixRMaj(n_bands,n_bands);
 
-        // Matrix to hold eigenvalues
-        eigenvals_buf = new DMatrixRMaj(n_bands,n_bands);
-        // Matrix to hold eigenvectors
-        eigenvecs_buf = new DMatrixRMaj(n_bands,n_bands);
-
-        sqrt_buf = new DMatrixRMaj(n_bands,n_bands);
-
-        index_array = new Integer[n_bands];
-
-        decomp = new SymmetricQRAlgorithmDecomposition_DDRM(true);
-
-        cov_buf1 = new DMatrixRMaj(1,n_bands);
-        cov_buf2 = new DMatrixRMaj(n_bands,n_bands);
+        cov_comp = new Cov_comp(n_bands);
+        sqrtm_comp = new Sqrtm_comp(n_bands);
+        regr_comp = new Regr_comp(n_bands);
+        sorted_eig_comp = new Sorted_eig_comp(n_bands);
     }
 
     /**
@@ -161,18 +151,18 @@ public class CCA {
     // Compute variables
 
     public void compute() {
-        calc_cov(xx_sum,x_sum,x_sum,n,xx_cov);
-        calc_cov(xy_sum,x_sum,y_sum,n,xy_cov);
-        calc_cov(yy_sum,y_sum,y_sum,n,yy_cov);
+        cov_comp.calc_cov(xx_sum,x_sum,x_sum,n,xx_cov);
+        cov_comp.calc_cov(xy_sum,x_sum,y_sum,n,xy_cov);
+        cov_comp.calc_cov(yy_sum,y_sum,y_sum,n,yy_cov);
 
         // Compute inverse square of xx_cov
         n_bands_mat_buf.set(xx_cov);
-        sqrtm(n_bands_mat_buf, xx_cov_sqrt_inv);
+        sqrtm_comp.sqrtm(n_bands_mat_buf, xx_cov_sqrt_inv);
         invert(xx_cov_sqrt_inv);
 
         // Compute inverse square of yy_cov
         n_bands_mat_buf.set(yy_cov);
-        sqrtm(n_bands_mat_buf, yy_cov_sqrt_inv);
+        sqrtm_comp.sqrtm(n_bands_mat_buf, yy_cov_sqrt_inv);
         invert(yy_cov_sqrt_inv);
 
         transpose(xy_cov,yx_cov);
@@ -186,24 +176,10 @@ public class CCA {
         mult(n_bands_mat_buf,yx_cov,n_bands_mat_buf2);
         mult(n_bands_mat_buf2,xx_cov_sqrt_inv,n_bands_mat_buf);
 
+        // Perform eigenvalue decomposition
+        sorted_eig_comp.decompose(n_bands_mat_buf,n_bands_mat_buf2);
+        // n_bands_mat_buf2 contains eigenvectors sorted by corresponding eigenvalues
 
-        // Decompose matrix, to find eigenvectors and eigenvalues
-        if (!decomp.decompose(n_bands_mat_buf)) {
-            throw new IllegalArgumentException();
-        }
-
-        // Sort eigenvectors by corresponding eigenvalues
-        ArrayIndexComparatorEig comparator = new ArrayIndexComparatorEig(decomp);
-        comparator.createIndexArray(index_array);
-        Arrays.sort(index_array,comparator);
-
-        for (int to_column = 0; to_column != n_bands; ++to_column) {
-            int from_column = index_array[to_column];
-            DMatrixRMaj eigvec = decomp.getEigenVector(from_column);
-            for (int row = 0; row != n_bands; ++row) {
-                n_bands_mat_buf2.set(row,to_column,eigvec.get(row));
-            }
-        }
         transpose(n_bands_mat_buf2);
         // calculate a
         mult(n_bands_mat_buf2,xx_cov_sqrt_inv,a);
@@ -218,108 +194,15 @@ public class CCA {
         mult(n_bands_mat_buf,xy_cov,n_bands_mat_buf2);
         mult(n_bands_mat_buf2,yy_cov_sqrt_inv,n_bands_mat_buf);
 
-//        b.set(n_bands_mat_buf);
-
         // Decompose matrix, to find eigenvectors and eigenvalues
-        if (!decomp.decompose(n_bands_mat_buf)) {
-            throw new IllegalArgumentException();
-        }
-
-        // Sort eigenvectors by corresponding eigenvalues
-        Arrays.sort(index_array,comparator);
-        for (int to_column = 0; to_column != n_bands; ++to_column) {
-            int from_column = index_array[to_column];
-            DMatrixRMaj eigvec = decomp.getEigenVector(from_column);
-            for (int row = 0; row != n_bands; ++row) {
-                n_bands_mat_buf2.set(row,to_column,eigvec.get(row));
-            }
-        }
+        // Perform eigenvalue decomposition
+        sorted_eig_comp.decompose(n_bands_mat_buf,n_bands_mat_buf2);
+        // n_bands_mat_buf2 contains eigenvectors sorted by corresponding eigenvalues
 
         transpose(n_bands_mat_buf2);
         mult(n_bands_mat_buf2,yy_cov_sqrt_inv,b);
         transpose(b);
 
-    }
-
-    // Regression function
-
-
-//def calc_linear_regression(n,a,b,x_sum, y_sum, xy_sum, xx_sum ):
-//    m1 = np.array([[n,(a @ x_sum)[0]],
-//            [(a @ x_sum)[0],((a[:,np.newaxis] @ a[:,np.newaxis].T) * xx_sum).sum()]])
-//    m2 = np.array([
-//            (b @ y_sum)[0],
-//            ( ( a[:,np.newaxis] @ b[np.newaxis,:] ) * ( xy_sum ) ).sum()
-//    ])
-//            return np.linalg.inv(m1) @ m2
-
-
-
-    public static void linear_regression(int n, DMatrixRMaj a, DMatrixRMaj b, DMatrixRMaj x_sum, DMatrixRMaj y_sum,
-                                         DMatrixRMaj xy_sum, DMatrixRMaj xx_sum, DMatrix2x2 ret) {
-
-//    m1 = np.array([[n,(a @ x_sum)[0]],
-//            [(a @ x_sum)[0],((a[:,np.newaxis] @ a[:,np.newaxis].T) * xx_sum).sum()]])
-        DMatrix2x2 m1 = new DMatrix2x2();
-
-//    m2 = np.array([
-//            (b @ y_sum)[0],
-//            ( ( a[:,np.newaxis] @ b[np.newaxis,:] ) * ( xy_sum ) ).sum()
-        DMatrix2x2 m2 = new DMatrix2x2();
-
-        DMatrix2x2 buf = new DMatrix2x2();
-
-        // return np.linalg.inv(m1) @ m2
-        CommonOps_DDF2.invert(m1,buf);
-        CommonOps_DDF2.mult(buf,m2,ret);
-
-    }
-
-    // Local matrices to calc_cov
-
-    DMatrixRMaj cov_buf1,cov_buf2;
-
-    /**
-     * Calculate covariance of x and y
-     * @param xy_sum
-     */
-    public void calc_cov(DMatrixRMaj xy_sum, DMatrixRMaj x_sum, DMatrixRMaj y_sum, int n, DMatrixRMaj ret) {
-        // ( xy_sum - np.matmul(x_sum,y_sum.T)/n )/(n-1)
-
-        transpose(y_sum,cov_buf1);
-        mult(x_sum,cov_buf1,cov_buf2);
-        divide(cov_buf2,n,cov_buf2);
-        subtract(xy_sum,cov_buf2,ret);
-        divide(ret,(n-1),ret);
-    }
-
-    /**
-     * Matrix square root
-     * @param mat
-     */
-    public void sqrtm(DMatrixRMaj mat, DMatrixRMaj result) throws IllegalArgumentException {
-
-        if (!decomp.decompose(mat)) {
-            throw new IllegalArgumentException();
-        }
-
-//        ArrayIndexComparatorEig comparator = new ArrayIndexComparatorEig(decomp);
-//        comparator.createIndexArray(index_array);
-//        Arrays.sort(index_array,comparator);
-
-        // Extract eigenvectors and eigenvalues to pre-allocated variables
-        for (int i = 0; i != n_bands; ++i ) {
-            eigenvals_buf.unsafe_set(i, i, Math.sqrt(decomp.getEigenvalue(i).real));
-            decomp.getEigenVector(i);
-            DMatrixRMaj eigvec = decomp.getEigenVector(i);
-            for (int j = 0; j != n_bands; ++j) {
-                eigenvecs_buf.set( j,i,eigvec.get(j) );
-            }
-        }
-
-        mult(eigenvecs_buf,eigenvals_buf,sqrt_buf);
-        transpose(eigenvecs_buf);
-        mult(sqrt_buf,eigenvecs_buf,result);
     }
 
 
