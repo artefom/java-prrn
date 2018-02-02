@@ -6,58 +6,20 @@ Module for calculation of CCA without access to whole data
 import numpy as np
 from scipy.linalg import sqrtm
 
-# Correlation function
-def calc_covariance(xy_sum,x_sum,y_sum,n):
+def calc_covariance(xy_wsum,x_wsum,y_wsum,w_sum):
     """
-    calculate covariance matrix of 2 variables
+    calculate weighted covariance matrix of 2 variables
     """
-    return ( xy_sum - np.matmul(x_sum,y_sum.T)/n )/(n-1)
+    return (xy_wsum - (x_wsum/w_sum) @ (y_wsum/w_sum).T*w_sum)/(w_sum-1)
 
-
-def calc_linear_regression(n,a,b,x_sum, y_sum, xy_sum, xx_sum ):
-    m1 = np.array([[n,(a @ x_sum)[0]],
-                  [(a @ x_sum)[0],((a[:,np.newaxis] @ a[:,np.newaxis].T) * xx_sum).sum()]])
+def calc_linear_regression( w_sum,a,b,x_wsum, y_wsum, xy_wsum, xx_wsum ):
+    m1 = np.array([[w_sum,(a @ x_wsum)[0]],
+                  [(a @ x_wsum)[0],((a[:,np.newaxis] @ a[:,np.newaxis].T) * xx_wsum).sum()]])
     m2 = np.array([
-        (b @ y_sum)[0],
-        ( ( a[:,np.newaxis] @ b[np.newaxis,:] ) * ( xy_sum ) ).sum()
-    ])
+        (b @ y_wsum)[0],
+        ( ( a[:,np.newaxis] @ b[np.newaxis,:] ) * ( xy_wsum ) ).sum()
+        ])
     return np.linalg.inv(m1) @ m2
-
-def cca(x,y):
-    x_sum = np.sum(x,axis=0)[:,np.newaxis]
-    y_sum = np.sum(y,axis=0)[:,np.newaxis]
-    xy_sum = np.transpose(x) @ y
-    xx_sum = np.transpose(x) @ x
-    yy_sum = np.transpose(y) @ y
-    n = np.shape(x)[0]
-
-    xy_cov = calc_covariance(xy_sum,x_sum,y_sum,n)
-    xx_cov = calc_covariance(xx_sum,x_sum,x_sum,n)
-    yy_cov = calc_covariance(yy_sum,y_sum,y_sum,n)
-
-
-    xx_cov_sqrt_inv = np.linalg.inv( sqrtm(xx_cov) )
-    yy_cov_sqrt_inv = np.linalg.inv( sqrtm(yy_cov) )
-    
-    u_mat = xx_cov_sqrt_inv @ xy_cov @ np.linalg.inv(yy_cov) @ xy_cov.T @ xx_cov_sqrt_inv
-    u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
-
-    v_mat = yy_cov_sqrt_inv @ xy_cov.T @ np.linalg.inv(xx_cov) @ xy_cov @ yy_cov_sqrt_inv
-    v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
-
-    # Sort eigenvectors by their eigenvalues
-    # The hypothisis here is that correlation is bigger if eigenvalue of eigenvector is bigger
-    u = u_eigvecs.T[sorted([i for i in range(len(u_eigvals))], key=lambda x: -u_eigvals[x])]
-    v = v_eigvecs.T[sorted([i for i in range(len(v_eigvals))], key=lambda x: -v_eigvals[x])]
-
-    a = (u @ xx_cov_sqrt_inv).T
-    b = (v @ yy_cov_sqrt_inv).T
-    
-    regressions = np.array( [ calc_linear_regression(n,a[:,i],b[:,i],x_sum, y_sum, xy_sum, xx_sum ) for i in range(a.shape[1]) ] )
-    
-    a = a*regressions[:,1]
-
-    return a,b,regressions[:,0]
 
 class CCA():
 
@@ -66,52 +28,76 @@ class CCA():
         self.reset()
 
     def reset(self):
-        self.x_sum = np.zeros(self.bands_n)[:,np.newaxis]
-        self.y_sum = np.zeros(self.bands_n)[:,np.newaxis]
-        self.xy_sum = np.zeros((self.bands_n,self.bands_n))
-        self.xx_sum = np.zeros((self.bands_n,self.bands_n))
-        self.yy_sum = np.zeros((self.bands_n,self.bands_n))
+        
+        # sum of weights
+        self.w_sum = 0
+        
+        # weighted statistics
+        self.x_wsum  = np.zeros(self.bands_n)[:,np.newaxis]
+        self.y_wsum  = np.zeros(self.bands_n)[:,np.newaxis]
+        self.xy_wsum = np.zeros((self.bands_n,self.bands_n))
+        self.xx_wsum = np.zeros((self.bands_n,self.bands_n))
+        self.yy_wsum = np.zeros((self.bands_n,self.bands_n))
+
+        # variables to hold result
         self.a = np.zeros((self.bands_n,self.bands_n))
         self.b = np.zeros((self.bands_n,self.bands_n))
         self.reg = np.zeros((self.bands_n,2))
-        self.n = 0
         
         
-    def push(self,x,y):
-        """
-        push x and y to caclulate cca. x and y values are not stored
-        """
-        self.x_sum += np.sum(x,axis=0)[:,np.newaxis]
-        self.y_sum += np.sum(y,axis=0)[:,np.newaxis]
-        self.xy_sum += np.matmul(np.transpose(x),y)
-        self.xx_sum += np.matmul(np.transpose(x),x)
-        self.yy_sum += np.matmul(np.transpose(y),y)
-        self.n += np.shape(x)[0]
-
+    def push(self,x,y,w = None):
+        
+        if w is not None:
+            self.xy_wsum += np.transpose(x) @ ( y*w[:,np.newaxis] )
+            self.xx_wsum += np.transpose(x) @ ( x*w[:,np.newaxis] )
+            self.yy_wsum += np.transpose(y) @ ( y*w[:,np.newaxis] )
+            self.x_wsum  += np.sum(x*w[:,np.newaxis],axis=0)[:,np.newaxis]
+            self.y_wsum  += np.sum(y*w[:,np.newaxis],axis=0)[:,np.newaxis]
+            self.w_sum += w.sum()
+        else:
+            # assuming all weights are 1
+            self.xy_wsum += np.transpose(x) @ y
+            self.xx_wsum += np.transpose(x) @ x
+            self.yy_wsum += np.transpose(y) @ y
+            self.x_wsum  += np.sum(x,axis=0)[:,np.newaxis]
+            self.y_wsum  += np.sum(y,axis=0)[:,np.newaxis]
+            self.w_sum += np.shape(x)[0]
+            
     def pull(self,x,y):
-        """
-        pull x and y from caclulating cca. x and y values are not stored
-        """
-        self.x_sum -= np.sum(x,axis=0)[:,np.newaxis]
-        self.y_sum -= np.sum(y,axis=0)[:,np.newaxis]
-        self.xy_sum -= np.matmul(np.transpose(x),y)
-        self.xx_sum -= np.matmul(np.transpose(x),x)
-        self.yy_sum -= np.matmul(np.transpose(y),y)
-        self.n -= np.shape(x)[0]
+
+        
+        if w is not None:
+            self.xy_wsum -= np.transpose(x) @ (y*w)
+            self.xx_wsum -= np.transpose(x) @ (x*w)
+            self.yy_wsum -= np.transpose(y) @ (y*w)
+            self.x_wsum  -= np.sum(x*w,axis=0)[:,np.newaxis]
+            self.y_wsum  -= np.sum(y*w,axis=0)[:,np.newaxis]
+            self.w_sum -= w.sum()
+        else:
+            # assuming all weights are 1
+            self.xy_wsum -= np.transpose(x) @ y
+            self.xx_wsum -= np.transpose(x) @ x
+            self.yy_wsum -= np.transpose(y) @ y
+            self.x_wsum  -= np.sum(x,axis=0)[:,np.newaxis]
+            self.y_wsum  -= np.sum(y,axis=0)[:,np.newaxis]
+            self.w_sum -= np.shape(x)[0]
+            
         
     def calc(self):
         
-        xx_cov = calc_covariance(self.xx_sum,self.x_sum,self.x_sum,self.n)
-        xy_cov = calc_covariance(self.xy_sum,self.x_sum,self.y_sum,self.n)
-        yy_cov = calc_covariance(self.yy_sum,self.y_sum,self.y_sum,self.n)
+        #def calc_covariance_weighted(xy_wsum,x_sum,x_wsum,y_sum,y_wsum,n,w_sum):
         
-        xx_cov_sqrt_inv = np.linalg.inv( sqrtm(xx_cov) )
-        yy_cov_sqrt_inv = np.linalg.inv( sqrtm(yy_cov) )
+        self.xx_cov = calc_covariance(self.xx_wsum,self.x_wsum,self.x_wsum,self.w_sum)
+        self.xy_cov = calc_covariance(self.xy_wsum,self.x_wsum,self.y_wsum,self.w_sum)
+        self.yy_cov = calc_covariance(self.yy_wsum,self.y_wsum,self.y_wsum,self.w_sum)
+        
+        xx_cov_sqrt_inv = np.linalg.inv( sqrtm(self.xx_cov) )
+        yy_cov_sqrt_inv = np.linalg.inv( sqrtm(self.yy_cov) )
     
-        u_mat = xx_cov_sqrt_inv @ xy_cov @ np.linalg.inv(yy_cov) @ xy_cov.T @ xx_cov_sqrt_inv
+        u_mat = xx_cov_sqrt_inv @ self.xy_cov @ np.linalg.inv(self.yy_cov) @ self.xy_cov.T @ xx_cov_sqrt_inv
         u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
 
-        v_mat = yy_cov_sqrt_inv @ xy_cov.T @ np.linalg.inv(xx_cov) @ xy_cov @ yy_cov_sqrt_inv
+        v_mat = yy_cov_sqrt_inv @ self.xy_cov.T @ np.linalg.inv(self.xx_cov) @ self.xy_cov @ yy_cov_sqrt_inv
         v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
         
         # Sort eigenvectors by their eigenvalues
@@ -121,9 +107,14 @@ class CCA():
         
         self.a = (u @ xx_cov_sqrt_inv).T
         self.b = (v @ yy_cov_sqrt_inv).T
+                    
+        #self.reg = np.array( [ calc_linear_regression(self.n,self.a[:,i],self.b[:,i],self.x_sum, self.y_sum, self.xy_sum, self.xx_sum ) for i in range(self.a.shape[1]) ] )
         
-        # fix possible result for negarive correlation
-        self.reg = np.array( [ calc_linear_regression(self.n,self.a[:,i],self.b[:,i],self.x_sum, self.y_sum, self.xy_sum, self.xx_sum ) for i in range(self.a.shape[1]) ] )
+        #fix possible result for negarive correlation    
+        self.reg = np.array([
+            calc_linear_regression( self.w_sum, self.a[:,i], self.b[:,i], self.x_wsum, self.y_wsum, self.xy_wsum, self.xx_wsum ) for i in range(self.bands_n)
+        ])
+        
         self.a = self.a*self.reg[:,1]
         
         return self.a,self.b, self.reg
