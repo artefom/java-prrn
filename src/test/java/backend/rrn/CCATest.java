@@ -62,6 +62,7 @@ public class CCATest {
         DMatrixRMaj expected_V = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_V.csv").normalize().toString() ) ) );
         DMatrixRMaj expected_a = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_a.csv").normalize().toString() ) ) );
         DMatrixRMaj expected_b = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_b.csv").normalize().toString() ) ) );
+        DMatrixRMaj expected_regr_out = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_regr.csv").normalize().toString() ) ) );
 
         DMatrixRMaj expected_x_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("x_sum.csv").normalize().toString() ) ) );
         DMatrixRMaj expected_xx_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xx_sum.csv").normalize().toString() ) ) );
@@ -89,9 +90,16 @@ public class CCATest {
         CCA CCA_calc = new CCA(n_bands);
 
         // Push into CCA with 10-batches
-        int push_batch = 10;
+        int batch_size = 10;
 
-        CCA_calc.push(X,Y);
+        for (int batch_start = 0; batch_start < n; batch_start+=batch_size) {
+            int batch_end = batch_start+batch_size;
+            if (batch_end > n) batch_end = n;
+
+            DMatrixRMaj X_batch = extract(X,batch_start,batch_end,0,n_bands);
+            DMatrixRMaj Y_batch = extract(Y,batch_start,batch_end,0,n_bands);
+            CCA_calc.push(X_batch,Y_batch);
+        }
 
         assertEquals(expected_x_sum,CCA_calc.x_sum, TOL);
         assertEquals(expected_xx_sum,CCA_calc.xx_sum, TOL);
@@ -107,54 +115,19 @@ public class CCATest {
         assertEquals(expected_xx_cov_sqrt_inv,CCA_calc.xx_cov_sqrt_inv, TOL);
         assertEquals(expected_yy_cov_sqrt_inv,CCA_calc.yy_cov_sqrt_inv, TOL);
 
-//        System.out.println("A");
-//        System.out.println(CCA_calc.a);
-//        System.out.println("B");
-//        System.out.println(CCA_calc.b);
+        // Check that coefficient ratio match
+        // Changes in sign may be due to different eigen-value decomposition algorithm.
+        // And the magnitude of a and b does not really matter
+        // only their ratio
 
-        // Print linear regression result
+        for (int row = 0; row != n_bands; ++row) {
+            for (int column = 0; column != n_bands; ++column) {
+                double expected_ratio = expected_a.get(row,column)/expected_b.get(row,column);
+                double got_ratio = CCA_calc.a.get(row,column)/CCA_calc.b.get(row,column);
+                assertEquals(expected_ratio,got_ratio,TOL);
+            }
+        }
 
-        DMatrixRMaj regr_ret = new DMatrixRMaj(n_bands,2);
-
-        Regr_comp.linear_regression(
-                CCA_calc.n,
-                extract( CCA_calc.a, 0, n_bands, 0, 1), // 0-band of a
-                extract( CCA_calc.b, 0,n_bands,0,1), // 0-band of b
-                CCA_calc.x_sum,
-                CCA_calc.y_sum,
-                CCA_calc.xy_sum,
-                CCA_calc.xx_sum,
-                regr_ret,
-                0,
-                0
-                );
-
-        System.out.println("Linear regression output");
-        System.out.println(regr_ret);
-
-
-
-
-//        System.out.println(CCA_calc.b);
-//
-//        DMatrixRMaj xx_cov = new DMatrixRMaj(n_bands,n_bands);
-//        CCA_calc.calc_cov(CCA_calc.xx_sum,CCA_calc.x_sum,CCA_calc.x_sum,n,xx_cov);
-
-//        System.out.println(xx_cov);
-//        assertEquals(expected_xx_cov,xx_cov,TOL);
-
-//
-//        int n_bands = X.getNumCols();
-//
-//        DMatrixRMaj x_sum = new DMatrixRMaj(n_bands,1);
-//
-//        sumCols(X,x_sum);
-//
-//        EjmlUnitTests.assertEquals(expected_x_sum,x_sum, UtilEjml.TEST_F64);
-
-//        DMatrixRMaj xx_cov_sqrtm = new DMatrixRMaj(n_bands,n_bands);
-//        CCA_calc.sqrtm(expected_xx_cov,xx_cov_sqrtm);
-//        System.out.println(xx_cov_sqrtm);
 
     }
 

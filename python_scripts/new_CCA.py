@@ -95,15 +95,15 @@ class CCA():
         yy_cov_sqrt_inv = np.linalg.inv( sqrtm(self.yy_cov) )
     
         u_mat = xx_cov_sqrt_inv @ self.xy_cov @ np.linalg.inv(self.yy_cov) @ self.xy_cov.T @ xx_cov_sqrt_inv
-        u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
+        self.u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
 
         v_mat = yy_cov_sqrt_inv @ self.xy_cov.T @ np.linalg.inv(self.xx_cov) @ self.xy_cov @ yy_cov_sqrt_inv
-        v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
+        self.v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
         
         # Sort eigenvectors by their eigenvalues
         # The hypothisis here is that correlation is bigger if eigenvalue of eigenvector is bigger
-        u = u_eigvecs.T[sorted([i for i in range(len(u_eigvals))], key=lambda x: -u_eigvals[x])]
-        v = v_eigvecs.T[sorted([i for i in range(len(v_eigvals))], key=lambda x: -v_eigvals[x])]
+        u = u_eigvecs.T[sorted([i for i in range(len(self.u_eigvals))], key=lambda x: -self.u_eigvals[x])]
+        v = v_eigvecs.T[sorted([i for i in range(len(self.v_eigvals))], key=lambda x: -self.v_eigvals[x])]
         
         self.a = (u @ xx_cov_sqrt_inv).T
         self.b = (v @ yy_cov_sqrt_inv).T

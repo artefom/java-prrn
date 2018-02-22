@@ -48,16 +48,18 @@ public class CCA {
     public DMatrixRMaj x_sum,xx_sum,xy_sum,yy_sum,y_sum;
     public DMatrixRMaj xx_cov,xy_cov, yx_cov, yy_cov;
     public DMatrixRMaj xx_cov_sqrt_inv, yy_cov_sqrt_inv;
-    public DMatrixRMaj a,b;
+    public DMatrixRMaj a,b; // linear transformation coef matrices
+    public DMatrixRMaj regr_ret; // output of linear regression
+
 
     // Declared with computation speedup in mind
     private DMatrixRMaj n_bands_vec_buf,n_bands_mat_buf,n_bands_mat_buf2;
 
     // Computition engines
-    private Cov_comp cov_comp;
-    private Sqrtm_comp sqrtm_comp;
-    private Regr_comp regr_comp;
-    private Sorted_eig_comp sorted_eig_comp;
+    private Cov_comp cov_comp; // Covariance computation
+    private Sqrtm_comp sqrtm_comp; // Square root matrix computation
+    private Regr_comp regr_comp; // Linear regression computation
+    private Sorted_eig_comp sorted_eig_comp; // Eigen decomposition computation
 
 
     /**
@@ -82,6 +84,8 @@ public class CCA {
 
         a = new DMatrixRMaj(n_bands,n_bands);
         b = new DMatrixRMaj(n_bands,n_bands);
+        regr_ret = new DMatrixRMaj(n_bands,2);
+
 
         n_bands_vec_buf = new DMatrixRMaj(n_bands,1);
         n_bands_mat_buf = new DMatrixRMaj(n_bands, n_bands);
@@ -167,8 +171,9 @@ public class CCA {
 
         transpose(xy_cov,yx_cov);
 
-//u_mat = xx_cov_sqrt_inv @ xy_cov @ np.linalg.inv(yy_cov) @ xy_cov.T @ xx_cov_sqrt_inv
-//u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
+        //Equivalent python code:
+        //u_mat = xx_cov_sqrt_inv @ xy_cov @ np.linalg.inv(yy_cov) @ xy_cov.T @ xx_cov_sqrt_inv
+        //u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
 
         invert(yy_cov,n_bands_mat_buf);
         mult(xy_cov,n_bands_mat_buf,n_bands_mat_buf2);
@@ -185,8 +190,9 @@ public class CCA {
         mult(n_bands_mat_buf2,xx_cov_sqrt_inv,a);
         transpose(a);
 
-//v_mat = yy_cov_sqrt_inv @ xy_cov.T @ np.linalg.inv(xx_cov) @ xy_cov @ yy_cov_sqrt_inv
-//v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
+        // Equivalent python code:
+        //v_mat = yy_cov_sqrt_inv @ xy_cov.T @ np.linalg.inv(xx_cov) @ xy_cov @ yy_cov_sqrt_inv
+        //v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
 
         invert(xx_cov,n_bands_mat_buf);
         mult(yx_cov,n_bands_mat_buf,n_bands_mat_buf2);
@@ -202,6 +208,28 @@ public class CCA {
         transpose(n_bands_mat_buf2);
         mult(n_bands_mat_buf2,yy_cov_sqrt_inv,b);
         transpose(b);
+
+        // Compute linear regression for a
+        regr_comp.compute( n, a, b, x_sum, y_sum, xy_sum, xx_sum, regr_ret );
+
+        // multiply a by regression coefficients.
+        // By doing this, we also multiply U canonical variates by same coefs
+        // If further we add intercept to U they'll become best-fitted to V variates
+        // That will not change their correlation coefficients, but fit their magnitudes
+        // closer. There is a practical reason for doing this.
+
+        // i-th column of a is coefficient column-vector for i-th canonical variate
+        for (int cur_band = 0; cur_band != n_bands; ++cur_band) {
+
+            double mult_coef = regr_ret.get(cur_band,1);
+            // To multiply i-th column vector by mult_coef we should:
+            // Iterate through column and multiply each value by regression coefficient
+            for (int coef_i = 0; coef_i != n_bands; ++coef_i ) {
+                a.set(coef_i, cur_band,
+                        a.get(coef_i,cur_band)*mult_coef
+                );
+            }
+        }
 
     }
 
