@@ -1,18 +1,12 @@
 package backend.rrn;
 
-import org.ejml.data.DMatrix2x2;
 import org.ejml.data.DMatrixRMaj;
-import org.ejml.dense.fixed.CommonOps_DDF2;
-import org.ejml.dense.row.decomposition.eig.SymmetricQRAlgorithmDecomposition_DDRM;
-import org.ejml.interfaces.decomposition.EigenDecomposition_F64;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import static org.ejml.dense.row.EigenOps_DDRM.*;
-
-import java.util.Arrays;
-import java.util.Comparator;
-
+import static backend.utils.MatUtils.*;
 import static org.ejml.dense.row.CommonOps_DDRM.*;
+// custom math functions
+
 
 //class ArrayIndexComparatorEig implements Comparator<Integer>
 //{
@@ -43,9 +37,10 @@ import static org.ejml.dense.row.CommonOps_DDRM.*;
 public class CCA {
 
     // Usefull statistics that can be used by external users
-    public int n;
+    public double w_sum;
+
     public int n_bands;
-    public DMatrixRMaj x_sum,xx_sum,xy_sum,yy_sum,y_sum;
+    public DMatrixRMaj x_wsum, xx_wsum, xy_wsum, yy_wsum, y_wsum;
     public DMatrixRMaj xx_cov,xy_cov, yx_cov, yy_cov;
     public DMatrixRMaj xx_cov_sqrt_inv, yy_cov_sqrt_inv;
     public DMatrixRMaj a,b; // linear transformation coef matrices
@@ -68,11 +63,11 @@ public class CCA {
     public CCA(int i_n_bands) {
         this.n_bands = i_n_bands;
 
-        x_sum = new DMatrixRMaj(n_bands,1);
-        xx_sum = new DMatrixRMaj(n_bands,n_bands);
-        xy_sum = new DMatrixRMaj(n_bands,n_bands);
-        yy_sum = new DMatrixRMaj(n_bands,n_bands);
-        y_sum = new DMatrixRMaj(n_bands,1);
+        x_wsum = new DMatrixRMaj(n_bands,1);
+        xx_wsum = new DMatrixRMaj(n_bands,n_bands);
+        xy_wsum = new DMatrixRMaj(n_bands,n_bands);
+        yy_wsum = new DMatrixRMaj(n_bands,n_bands);
+        y_wsum = new DMatrixRMaj(n_bands,1);
 
         xx_cov = new DMatrixRMaj(n_bands,n_bands);
         xy_cov = new DMatrixRMaj(n_bands,n_bands);
@@ -97,33 +92,39 @@ public class CCA {
         sorted_eig_comp = new Sorted_eig_comp(n_bands);
     }
 
-    /**
-     * warp around {@link #push(DMatrixRMaj,DMatrixRMaj)}
-     * @param i_X x data
-     * @param i_Y y data
-     */
-    public void push(double[][] i_X, double[][] i_Y) {
-        push(new DMatrixRMaj(i_X),new DMatrixRMaj(i_Y));
-    }
+//    /**
+//     * warp around {@link #push(DMatrixRMaj,DMatrixRMaj, DMatrixRMaj)}
+//     * @param i_X x data
+//     * @param i_Y y data
+//     */
+//    public void push(double[][] i_X, double[][] i_Y) {
+//        push(new DMatrixRMaj(i_X),new DMatrixRMaj(i_Y));
+//    }
+//
+//    /**
+//     * warp around {@link #pull(DMatrixRMaj, DMatrixRMaj)}
+//     * @param i_X x data
+//     * @param i_Y y data
+//     */
+//    public void pull(double[][] i_X, double[][] i_Y) {
+//        pull(new DMatrixRMaj(i_X),new DMatrixRMaj(i_Y));
+//    }
 
-    /**
-     * warp around {@link #pull(DMatrixRMaj, DMatrixRMaj)}
-     * @param i_X x data
-     * @param i_Y y data
-     */
-    public void pull(double[][] i_X, double[][] i_Y) {
-        pull(new DMatrixRMaj(i_X),new DMatrixRMaj(i_Y));
-    }
+    public void push(DMatrixRMaj X, DMatrixRMaj Y, DMatrixRMaj w) {
 
-    public void push(DMatrixRMaj X, DMatrixRMaj Y) {
+        //self.xy_wsum += np.transpose(x) @ ( y*w[:,np.newaxis] )
+        //self.xx_wsum += np.transpose(x) @ ( x*w[:,np.newaxis] )
+        //self.yy_wsum += np.transpose(y) @ ( y*w[:,np.newaxis] )
 
-        //self.x_sum += np.sum(x,axis=0)[:,np.newaxis]
-        sumCols(X,n_bands_vec_buf);
-        add(n_bands_vec_buf,x_sum,x_sum);
+        //self.w_sum += w.sum()
 
-        //self.y_sum += np.sum(y,axis=0)[:,np.newaxis]
-        sumCols(Y,n_bands_vec_buf);
-        add(n_bands_vec_buf,y_sum,y_sum);
+        // x_wsum  += np.sum(x*w[:,np.newaxis],axis=0)[:,np.newaxis]
+        wsumCols(X,w,n_bands_vec_buf);
+        add(n_bands_vec_buf, x_wsum, x_wsum);
+
+        // y_wsum  += np.sum(y*w[:,np.newaxis],axis=0)[:,np.newaxis]
+        wsumCols(Y,w,n_bands_vec_buf);
+        add(n_bands_vec_buf, y_wsum, y_wsum);
 
         // Calculate transpositions
         DMatrixRMaj X_T = new DMatrixRMaj(X.numCols,X.numRows);
@@ -131,20 +132,20 @@ public class CCA {
         transpose(X,X_T);
         transpose(Y,Y_T);
 
-        //self.xy_sum += np.matmul(np.transpose(x),y)
+        //self.xy_wsum += np.matmul(np.transpose(x),y)
         mult(X_T,Y,n_bands_mat_buf);
-        add(n_bands_mat_buf,xy_sum,xy_sum);
+        add(n_bands_mat_buf, xy_wsum, xy_wsum);
 
-        //self.xx_sum += np.matmul(np.transpose(x),x)
+        //self.xx_wsum += np.matmul(np.transpose(x),x)
         mult(X_T,X,n_bands_mat_buf);
-        add(n_bands_mat_buf,xx_sum,xx_sum);
+        add(n_bands_mat_buf, xx_wsum, xx_wsum);
 
-        //self.yy_sum += np.matmul(np.transpose(y),y)
+        //self.yy_wsum += np.matmul(np.transpose(y),y)
         mult(Y_T,Y,n_bands_mat_buf);
-        add(n_bands_mat_buf,yy_sum,yy_sum);
+        add(n_bands_mat_buf, yy_wsum, yy_wsum);
 
-        //self.n += np.shape(x)[0]
-        n+=X.numRows;
+        //self.w_sum += np.shape(x)[0]
+        w_sum += elementSum(w);
     }
 
     public void pull(DMatrixRMaj i_X, DMatrixRMaj i_Y) {
@@ -155,9 +156,9 @@ public class CCA {
     // Compute variables
 
     public void compute() {
-        cov_comp.calc_cov(xx_sum,x_sum,x_sum,n,xx_cov);
-        cov_comp.calc_cov(xy_sum,x_sum,y_sum,n,xy_cov);
-        cov_comp.calc_cov(yy_sum,y_sum,y_sum,n,yy_cov);
+        cov_comp.calc_cov(xx_wsum, x_wsum, x_wsum, w_sum,xx_cov);
+        cov_comp.calc_cov(xy_wsum, x_wsum, y_wsum, w_sum,xy_cov);
+        cov_comp.calc_cov(yy_wsum, y_wsum, y_wsum, w_sum,yy_cov);
 
         // Compute inverse square of xx_cov
         n_bands_mat_buf.set(xx_cov);
@@ -210,7 +211,7 @@ public class CCA {
         transpose(b);
 
         // Compute linear regression for a
-        regr_comp.compute( n, a, b, x_sum, y_sum, xy_sum, xx_sum, regr_ret );
+        regr_comp.compute(w_sum, a, b, x_wsum, y_wsum, xy_wsum, xx_wsum, regr_ret );
 
         // multiply a by regression coefficients.
         // By doing this, we also multiply U canonical variates by same coefs

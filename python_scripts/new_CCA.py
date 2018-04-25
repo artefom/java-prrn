@@ -10,7 +10,7 @@ def calc_covariance(xy_wsum,x_wsum,y_wsum,w_sum):
     """
     calculate weighted covariance matrix of 2 variables
     """
-    return (xy_wsum - (x_wsum/w_sum) @ (y_wsum/w_sum).T*w_sum)/(w_sum-1)
+    return (xy_wsum - (x_wsum @ y_wsum.T)/w_sum)/(w_sum-1)
 
 def calc_linear_regression( w_sum,a,b,x_wsum, y_wsum, xy_wsum, xx_wsum ):
     m1 = np.array([[w_sum,(a @ x_wsum)[0]],
@@ -64,14 +64,12 @@ class CCA():
             self.w_sum += np.shape(x)[0]
             
     def pull(self,x,y):
-
-        
         if w is not None:
-            self.xy_wsum -= np.transpose(x) @ (y*w)
-            self.xx_wsum -= np.transpose(x) @ (x*w)
-            self.yy_wsum -= np.transpose(y) @ (y*w)
-            self.x_wsum  -= np.sum(x*w,axis=0)[:,np.newaxis]
-            self.y_wsum  -= np.sum(y*w,axis=0)[:,np.newaxis]
+            self.xy_wsum -= np.transpose(x) @ ( y*w[:,np.newaxis] )
+            self.xx_wsum -= np.transpose(x) @ ( x*w[:,np.newaxis] )
+            self.yy_wsum -= np.transpose(y) @ ( y*w[:,np.newaxis] )
+            self.x_wsum  -= np.sum(x*w[:,np.newaxis],axis=0)[:,np.newaxis]
+            self.y_wsum  -= np.sum(y*w[:,np.newaxis],axis=0)[:,np.newaxis]
             self.w_sum -= w.sum()
         else:
             # assuming all weights are 1
@@ -91,13 +89,13 @@ class CCA():
         self.xy_cov = calc_covariance(self.xy_wsum,self.x_wsum,self.y_wsum,self.w_sum)
         self.yy_cov = calc_covariance(self.yy_wsum,self.y_wsum,self.y_wsum,self.w_sum)
         
-        xx_cov_sqrt_inv = np.linalg.inv( sqrtm(self.xx_cov) )
-        yy_cov_sqrt_inv = np.linalg.inv( sqrtm(self.yy_cov) )
+        self.xx_cov_sqrt_inv = np.linalg.inv( sqrtm(self.xx_cov) )
+        self.yy_cov_sqrt_inv = np.linalg.inv( sqrtm(self.yy_cov) )
     
-        u_mat = xx_cov_sqrt_inv @ self.xy_cov @ np.linalg.inv(self.yy_cov) @ self.xy_cov.T @ xx_cov_sqrt_inv
+        u_mat = self.xx_cov_sqrt_inv @ self.xy_cov @ np.linalg.inv(self.yy_cov) @ self.xy_cov.T @ self.xx_cov_sqrt_inv
         self.u_eigvals,u_eigvecs = np.linalg.eig(u_mat)
 
-        v_mat = yy_cov_sqrt_inv @ self.xy_cov.T @ np.linalg.inv(self.xx_cov) @ self.xy_cov @ yy_cov_sqrt_inv
+        v_mat = self.yy_cov_sqrt_inv @ self.xy_cov.T @ np.linalg.inv(self.xx_cov) @ self.xy_cov @ self.yy_cov_sqrt_inv
         self.v_eigvals,v_eigvecs = np.linalg.eig(v_mat)
         
         # Sort eigenvectors by their eigenvalues
@@ -105,8 +103,8 @@ class CCA():
         u = u_eigvecs.T[sorted([i for i in range(len(self.u_eigvals))], key=lambda x: -self.u_eigvals[x])]
         v = v_eigvecs.T[sorted([i for i in range(len(self.v_eigvals))], key=lambda x: -self.v_eigvals[x])]
         
-        self.a = (u @ xx_cov_sqrt_inv).T
-        self.b = (v @ yy_cov_sqrt_inv).T
+        self.a = (u @ self.xx_cov_sqrt_inv).T
+        self.b = (v @ self.yy_cov_sqrt_inv).T
                     
         #self.reg = np.array( [ calc_linear_regression(self.n,self.a[:,i],self.b[:,i],self.x_sum, self.y_sum, self.xy_sum, self.xx_sum ) for i in range(self.a.shape[1]) ] )
         

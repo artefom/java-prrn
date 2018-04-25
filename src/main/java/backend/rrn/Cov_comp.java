@@ -17,13 +17,13 @@ public class Cov_comp {
         cov_buf2 = new DMatrixRMaj(n_bands,n_bands);
     }
 
-    public void calc_cov(DMatrixRMaj xy_sum, DMatrixRMaj x_sum, DMatrixRMaj y_sum, int n, DMatrixRMaj ret) {
-        // ( xy_sum - np.matmul(x_sum,y_sum.T)/n )/(n-1)
+    public void calc_cov(DMatrixRMaj xy_wsum, DMatrixRMaj x_wsum, DMatrixRMaj y_wsum, double w_sum, DMatrixRMaj ret) {
+        // ( xy_wsum - (x_wsum @ y_wsum.T)/w_sum )/(w_sum-1)
 
-        transpose(y_sum,cov_buf1);
-        mult(x_sum,cov_buf1,cov_buf2);
-        divide(cov_buf2,n,cov_buf2);
-        subtract(xy_sum,cov_buf2,ret);
-        divide(ret,(n-1),ret);
+        transpose(y_wsum,cov_buf1);
+        mult(x_wsum,cov_buf1,cov_buf2);
+        divide(cov_buf2,w_sum,cov_buf2);
+        subtract(xy_wsum,cov_buf2,ret);
+        divide(ret,(w_sum-1),ret);
     }
 }

@@ -1,12 +1,11 @@
 package backend.rrn;
 
 import static org.ejml.EjmlUnitTests.*;
-import org.ejml.UtilEjml;
-import org.ejml.data.DMatrix2x2;
+
 import org.ejml.data.DMatrixRMaj;
 import static org.ejml.dense.row.CommonOps_DDRM.*;
+import static backend.utils.MatUtils.*;
 
-import org.ejml.dense.row.decomposition.eig.symm.SymmetricQrAlgorithm_DDRM;
 import org.junit.Test;
 
 import java.io.*;
@@ -64,11 +63,11 @@ public class CCATest {
         DMatrixRMaj expected_b = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_b.csv").normalize().toString() ) ) );
         DMatrixRMaj expected_regr_out = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_regr.csv").normalize().toString() ) ) );
 
-        DMatrixRMaj expected_x_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("x_sum.csv").normalize().toString() ) ) );
-        DMatrixRMaj expected_xx_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xx_sum.csv").normalize().toString() ) ) );
-        DMatrixRMaj expected_xy_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xy_sum.csv").normalize().toString() ) ) );
-        DMatrixRMaj expected_yy_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("yy_sum.csv").normalize().toString() ) ) );
-        DMatrixRMaj expected_y_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("y_sum.csv").normalize().toString() ) ) );
+        DMatrixRMaj expected_x_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("x_wsum.csv").normalize().toString() ) ) );
+        DMatrixRMaj expected_xx_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xx_wsum.csv").normalize().toString() ) ) );
+        DMatrixRMaj expected_xy_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xy_wsum.csv").normalize().toString() ) ) );
+        DMatrixRMaj expected_yy_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("yy_wsum.csv").normalize().toString() ) ) );
+        DMatrixRMaj expected_y_sum = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("y_wsum.csv").normalize().toString() ) ) );
 
         DMatrixRMaj expected_xx_cov = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xx_cov.csv").normalize().toString() ) ) );
         DMatrixRMaj expected_xy_cov = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("xy_cov.csv").normalize().toString() ) ) );
@@ -84,6 +83,15 @@ public class CCATest {
 
         DMatrixRMaj X = new DMatrixRMaj(expected_X);
         DMatrixRMaj Y = new DMatrixRMaj(expected_Y);
+        DMatrixRMaj w = null;
+
+        if (w == null) {
+            w = new DMatrixRMaj(X.numRows,1);
+            for (int row = 0; row != w.numRows; ++row) {
+                w.set(row,0,1);
+            }
+        }
+
         int n_bands = X.getNumCols();
         int n = X.getNumRows();
 
@@ -98,14 +106,15 @@ public class CCATest {
 
             DMatrixRMaj X_batch = extract(X,batch_start,batch_end,0,n_bands);
             DMatrixRMaj Y_batch = extract(Y,batch_start,batch_end,0,n_bands);
-            CCA_calc.push(X_batch,Y_batch);
+            DMatrixRMaj w_batch = extract(w,batch_start,batch_end,0,1);
+            CCA_calc.push(X_batch,Y_batch,w_batch);
         }
 
-        assertEquals(expected_x_sum,CCA_calc.x_sum, TOL);
-        assertEquals(expected_xx_sum,CCA_calc.xx_sum, TOL);
-        assertEquals(expected_xy_sum,CCA_calc.xy_sum, TOL);
-        assertEquals(expected_yy_sum,CCA_calc.yy_sum, TOL);
-        assertEquals(expected_y_sum,CCA_calc.y_sum, TOL);
+        assertEquals(expected_x_sum,CCA_calc.x_wsum, TOL);
+        assertEquals(expected_xx_sum,CCA_calc.xx_wsum, TOL);
+        assertEquals(expected_xy_sum,CCA_calc.xy_wsum, TOL);
+        assertEquals(expected_yy_sum,CCA_calc.yy_wsum, TOL);
+        assertEquals(expected_y_sum,CCA_calc.y_wsum, TOL);
 
         CCA_calc.compute();
 
@@ -129,6 +138,30 @@ public class CCATest {
         }
 
 
+    }
+
+    @Test
+    public void wsumColsTest() throws IOException {
+        Path folder = Paths.get("/home/artef/IdeaProjects/prrn-mosaic/python_scripts/test_files/");
+
+        DMatrixRMaj expected_X = new DMatrixRMaj( to_double_array( read_csv( folder.resolve("test_X.csv").normalize().toString() ) ) );
+        DMatrixRMaj X = new DMatrixRMaj(expected_X);
+        DMatrixRMaj w = null;
+        if (w == null) {
+            w = new DMatrixRMaj(X.numRows,1);
+            for (int row = 0; row != w.numRows; ++row) {
+                w.set(row,0,1.0/(row+1));
+            }
+        }
+
+        DMatrixRMaj ret;
+        System.out.println("Weighted sum method1:");
+        ret = sumCols( multRow(X,w,null),null);
+        System.out.println(ret);
+
+        System.out.println("Weighted sum method2:");
+        ret = wsumCols(X,w,null);
+        System.out.println(ret);
     }
 
 

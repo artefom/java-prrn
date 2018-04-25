@@ -4,6 +4,7 @@ import org.ejml.data.DMatrixRMaj;
 
 import static org.ejml.dense.row.CommonOps_DDRM.*;
 import static org.ejml.dense.row.CommonOps_DDRM.insert;
+import static backend.utils.MatUtils.*;
 
 /**
  * computition of regression
@@ -39,27 +40,27 @@ public class Regr_comp {
      * where
      * U[i] = a[i]'X
      * V[i] = b[i]'Y
-     * @param n - number of samples
+     * @param w_sum - number of samples
      * @param a - X linear coefficients column-vector
      * @param b - Y linear coefficients column-vector
-     * @param x_sum - band sum of X
-     * @param y_sum - band sum of Y
-     * @param xy_sum X Y covariance matrix
-     * @param xx_sum X X covariance matrix
+     * @param x_wsum - band sum of X
+     * @param y_wsum - band sum of Y
+     * @param xy_wsum X Y covariance matrix
+     * @param xx_wsum X X covariance matrix
      * @param ret - Return matrix
      * @param ret_y row to put return value into
      * @param ret_x column to put return value into
      */
-    public void linear_regression(int n, DMatrixRMaj a, DMatrixRMaj b, DMatrixRMaj x_sum, DMatrixRMaj y_sum,
-                                         DMatrixRMaj xy_sum, DMatrixRMaj xx_sum, DMatrixRMaj ret, int ret_y, int ret_x) {
+    public void linear_regression(double w_sum, DMatrixRMaj a, DMatrixRMaj b, DMatrixRMaj x_wsum, DMatrixRMaj y_wsum,
+                                         DMatrixRMaj xy_wsum, DMatrixRMaj xx_wsum, DMatrixRMaj ret, int ret_y, int ret_x) {
 
 
         // 0,0 item
-        m1.set(0,0,n);
+        m1.set(0,0,w_sum);
 
         // 0,1; 1,0 item
-        elementMult(a,x_sum,lin_reg_buf_b_1);
-        elementSum(lin_reg_buf_b_1);
+        elementMult(a,x_wsum,lin_reg_buf_b_1);
+        //elementSum(lin_reg_buf_b_1);
         m1.set(0,1, elementSum(lin_reg_buf_b_1) );
         m1.set( 1,0, elementSum(lin_reg_buf_b_1) );
 
@@ -67,19 +68,19 @@ public class Regr_comp {
 
         transpose(a,lin_reg_buf_1_b);
         mult(a,lin_reg_buf_1_b,lin_reg_buf_b_b);
-        elementMult(lin_reg_buf_b_b,xx_sum);
+        elementMult(lin_reg_buf_b_b,xx_wsum);
         m1.set(1,1,elementSum(lin_reg_buf_b_b) );
 
         // Step2 - calculate m2 matrix
 
         // 0,0 item
-        elementMult(b,y_sum,lin_reg_buf_b_1);
+        elementMult(b,y_wsum,lin_reg_buf_b_1);
         m2.set(0,0,elementSum(lin_reg_buf_b_1));
 
         // 1,0 item
         transpose(b,lin_reg_buf_1_b);
         mult(a,lin_reg_buf_1_b,lin_reg_buf_b_b);
-        elementMult(lin_reg_buf_b_b,xy_sum);
+        elementMult(lin_reg_buf_b_b,xy_wsum);
         m2.set( 1,0, elementSum(lin_reg_buf_b_b) );
 
         // Step 3 - calculate b and intercept
@@ -97,9 +98,9 @@ public class Regr_comp {
 
     /**
      * Calculate linear regression for all bands
-     * (uses {@link #linear_regression(int, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, int, int)}
+     * (uses {@link #linear_regression(double, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, DMatrixRMaj, int, int)}
      * for each band mulitple times
-     * @param n - number of saples
+     * @param w_sum - number of saples
      * @param a - a-coef matrix
      * @param b - b-coef matrix
      * @param x_sum - sum of X for each band
@@ -108,13 +109,13 @@ public class Regr_comp {
      * @param xx_sum - sum of x*x for each band
      * @param ret - output matrix
      */
-    public void compute(int n, DMatrixRMaj a, DMatrixRMaj b, DMatrixRMaj x_sum, DMatrixRMaj y_sum,
+    public void compute(double w_sum, DMatrixRMaj a, DMatrixRMaj b, DMatrixRMaj x_sum, DMatrixRMaj y_sum,
                         DMatrixRMaj xy_sum, DMatrixRMaj xx_sum, DMatrixRMaj ret) {
 
         // Iterate for all bands
         for (int target_band = 0; target_band != n_bands; ++target_band) {
             linear_regression(
-                    n,
+                    w_sum,
                     extract(a, 0, n_bands, target_band, target_band+1), // 0-band of a
                     extract(b, 0, n_bands, target_band, target_band+1), // 0-band of b
                     x_sum,
